@@ -1,15 +1,24 @@
+# Proyectos y Compilación
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
 /build
-/captures
-.externalNativeBuild
+/.idea/
+.kotlin/
 .cxx
-local.properties
+.externalNativeBuild
+
+# Android Studio - Específicos
+*.iws
+*.ipr
+/captures
+.DS_Store
+
+# Secretos y Entorno (IMPORTANTE para Supabase)
+.env
+.env.local
+secrets.xml
+
+# Archivos temporales de usuario
+*.bak
+*.swp
