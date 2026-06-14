@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+
+    <!-- La lista de transacciones -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerMovimientos"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        android:clipToPadding="false" />
+
+    <!-- Mensaje cuando no hay nada (se muestra/oculta por código) -->
+    <TextView
+        android:id="@+id/txtVacio"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="Aún no hay movimientos.\n¡Agrega tu primera transacción!"
+        android:textAlignment="center"
+        android:textColor="@color/gris_texto"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
+</FrameLayout>

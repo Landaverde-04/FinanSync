@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Círculo de fondo para el ícono del tipo. El color se cambia por código
+     según sea ingreso (verde) o gasto (rojo). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/verde_ingreso" />
+</shape>

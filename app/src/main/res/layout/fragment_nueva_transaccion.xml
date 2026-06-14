@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Raíz vertical: cabecera de pestañas arriba, formulario en medio, barra de acciones abajo -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/raiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <!-- ══════════ PESTAÑAS: Ingreso / Gasto ══════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingVertical="14dp">
+
+        <!-- Pestaña INGRESO -->
+        <LinearLayout
+            android:id="@+id/tabIngreso"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:id="@+id/lblIngreso"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="➕  Ingreso"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/verde_ingreso" />
+
+            <!-- Subrayado de la pestaña activa -->
+            <View
+                android:id="@+id/indicadorIngreso"
+                android:layout_width="80dp"
+                android:layout_height="3dp"
+                android:layout_marginTop="8dp"
+                android:background="@color/verde_ingreso" />
+        </LinearLayout>
+
+        <!-- Pestaña GASTO -->
+        <LinearLayout
+            android:id="@+id/tabGasto"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:id="@+id/lblGasto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="➖  Gasto"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/gris_texto" />
+
+            <View
+                android:id="@+id/indicadorGasto"
+                android:layout_width="80dp"
+                android:layout_height="3dp"
+                android:layout_marginTop="8dp"
+                android:background="@android:color/transparent" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ══════════ TARJETA DEL FORMULARIO ══════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="12dp"
+        android:padding="20dp"
+        android:background="@drawable/fondo_tarjeta">
+
+            <!-- ── Fila del MONTO grande + calculadora ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingBottom="12dp">
+
+                <!-- Ícono circular del tipo (cambia de color según ingreso/gasto) -->
+                <TextView
+                    android:id="@+id/iconoTipo"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:gravity="center"
+                    android:text="➕"
+                    android:textSize="20sp"
+                    android:textColor="@color/white"
+                    android:background="@drawable/circulo_tipo" />
+
+                <!-- Monto grande, alineado a la derecha -->
+                <EditText
+                    android:id="@+id/inputMonto"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:hint="0"
+                    android:text=""
+                    android:textSize="40sp"
+                    android:textStyle="bold"
+                    android:inputType="numberDecimal"
+                    android:background="@android:color/transparent"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp" />
+
+                <!-- Botón calculadora (lo conectamos en el paso de la calculadora) -->
+                <ImageView
+                    android:id="@+id/btnCalculadora"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:contentDescription="Calculadora" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0" />
+
+            <!-- ── Categoría ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="16dp">
+
+                <TextView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:text="❓"
+                    android:textSize="16sp"
+                    android:background="@drawable/circulo_gris" />
+
+                <!-- Spinner de categorías (lo llenará M3; por ahora con la categoría mock) -->
+                <Spinner
+                    android:id="@+id/spinnerCategoria"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp" />
+            </LinearLayout>
+
+            <!-- ── Descripción ── -->
+            <EditText
+                android:id="@+id/inputDescripcion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Escriba una descripción breve"
+                android:textColorHint="@color/gris_texto"
+                android:inputType="text"
+                android:paddingVertical="8dp" />
+
+            <!-- ── Fecha / Hora + botón Guardar ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="12dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/txtFecha"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="14/Jun/2026"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/txtHora"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="02:59 pm"
+                        android:textSize="16sp"
+                        android:layout_marginTop="6dp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGuardar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Guardar"
+                    android:paddingHorizontal="28dp"
+                    app:cornerRadius="12dp" />
+            </LinearLayout>
+    </LinearLayout>
+
+    <!-- ══════════ BARRA INFERIOR: galería / cámara ══════════ -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingVertical="12dp">
+
+        <ImageView
+            android:id="@+id/btnGaleria"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:contentDescription="Galería"
+            android:layout_marginEnd="40dp" />
+
+        <ImageView
+            android:id="@+id/btnCamara"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_camera"
+            android:contentDescription="Cámara" />
+    </LinearLayout>
+
+</LinearLayout>
