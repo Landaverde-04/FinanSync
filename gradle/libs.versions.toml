@@ -14,6 +14,13 @@ room = "2.6.1"
 #para supabase
 supabase = "2.5.0"
 ktor = "2.3.11"
+# --- Módulo 1: Transacciones + Captura (Kevin) ---
+camerax = "1.3.4"          # cámara: preview + tomar foto
+mlkitText = "16.0.1"       # OCR: leer texto de la foto
+playLocation = "21.3.0"    # GPS: ubicación al guardar
+lifecycle = "2.8.7"        # ViewModel + observar datos en la UI
+fragmentKtx = "1.8.5"      # helpers para Fragments (by viewModels, etc.)
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -30,6 +37,21 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
 supabase-gotrue = { module = "io.github.jan-tennert.supabase:gotrue-kt", version.ref = "supabase" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+
+# --- Módulo 1: Transacciones + Captura (Kevin) ---
+# CameraX: son 4 piezas que trabajan juntas
+camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+# ML Kit: reconocimiento de texto (OCR) en español/latino
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
+# GPS
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playLocation" }
+# Lifecycle + Fragment (base de MVVM en la UI)
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

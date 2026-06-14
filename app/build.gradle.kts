@@ -57,6 +57,21 @@ dependencies {
     implementation(libs.supabase.gotrue)    // Para la autenticación
     implementation(libs.ktor.client.android) // Motor de red
 
+    // ── Módulo 1: Transacciones + Captura (Kevin) ──
+    // CameraX (las 4 piezas)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
+    // OCR
+    implementation(libs.mlkit.text.recognition)
+    // GPS
+    implementation(libs.play.services.location)
+    // Lifecycle + Fragment (MVVM en la UI)
+    implementation(libs.lifecycle.viewmodel.ktx)
+    implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.androidx.fragment.ktx)
+
     configurations.all {
         resolutionStrategy {
             // Obliga a todo el proyecto a usar las versiones estables compatibles con tu API 35
