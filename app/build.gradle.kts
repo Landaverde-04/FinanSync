@@ -9,6 +9,11 @@ android {
     namespace = "com.grupo4.finansync"
     compileSdk = 35
 
+    // Genera una clase de acceso por cada layout XML (ViewBinding)
+    buildFeatures {
+        viewBinding = true
+    }
+
     defaultConfig {
         applicationId = "com.grupo4.finansync"
         minSdk = 24
@@ -71,6 +76,8 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.androidx.fragment.ktx)
+    // RecyclerView (lista de movimientos)
+    implementation(libs.androidx.recyclerview)
 
     configurations.all {
         resolutionStrategy {

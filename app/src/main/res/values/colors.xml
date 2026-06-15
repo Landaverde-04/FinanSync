@@ -2,4 +2,12 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- ── Módulo 1: colores de transacción ── -->
+    <color name="verde_ingreso">#2E7D32</color>      <!-- cabecera/acento de ingreso -->
+    <color name="verde_ingreso_claro">#E8F5E9</color> <!-- fondo suave de ingreso -->
+    <color name="rojo_gasto">#C62828</color>          <!-- cabecera/acento de gasto -->
+    <color name="rojo_gasto_claro">#FFEBEE</color>    <!-- fondo suave de gasto -->
+    <color name="gris_texto">#9E9E9E</color>          <!-- hints y texto secundario -->
+    <color name="gris_fondo_campo">#F5F5F5</color>    <!-- fondo de la tarjeta del formulario -->
 </resources>
