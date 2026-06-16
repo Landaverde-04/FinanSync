@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinSerialization)
+    id("androidx.navigation.safeargs.kotlin") version "2.7.7"
+
 }
 
 android {
@@ -83,6 +85,9 @@ dependencies {
     // Navigation Component
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+
+    // ── Módulo 2: Autenticación y Navegación ──
+    implementation("androidx.biometric:biometric:1.1.0")
 
     configurations.all {
         resolutionStrategy {

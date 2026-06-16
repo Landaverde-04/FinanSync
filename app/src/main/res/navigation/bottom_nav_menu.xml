@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_inicio"
+        android:title="Inicio"
+        android:icon="@android:drawable/ic_menu_today"/>
+    <item
+        android:id="@+id/nav_movimientos"
+        android:title="Movim."
+        android:icon="@android:drawable/ic_menu_sort_by_size"/>
+    <item
+        android:id="@+id/nav_ahorro"
+        android:title="Ahorro"
+        android:icon="@android:drawable/ic_menu_save"/>
+    <item
+        android:id="@+id/nav_reportes"
+        android:title="Reportes"
+        android:icon="@android:drawable/ic_menu_agenda"/>
+</menu>

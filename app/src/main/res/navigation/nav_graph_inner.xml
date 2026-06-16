@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph_inner"
+    app:startDestination="@id/nav_inicio">
+
+    <!-- M4 reemplazará este fragment por el Dashboard real -->
+    <fragment
+        android:id="@+id/nav_inicio"
+        android:name="com.grupo4.finansync.ui.auth.PlaceholderFragment"
+        android:label="Inicio" />
+
+    <!-- M1/M3 reemplazará este fragment por Transacciones/Movimientos -->
+    <fragment
+        android:id="@+id/nav_movimientos"
+        android:name="com.grupo4.finansync.ui.auth.PlaceholderFragment"
+        android:label="Movimientos" />
+
+    <!-- M4 reemplazará este fragment por Ahorro -->
+    <fragment
+        android:id="@+id/nav_ahorro"
+        android:name="com.grupo4.finansync.ui.auth.PlaceholderFragment"
+        android:label="Ahorro" />
+
+    <!-- M5 reemplazará este fragment por Reportes -->
+    <fragment
+        android:id="@+id/nav_reportes"
+        android:name="com.grupo4.finansync.ui.auth.PlaceholderFragment"
+        android:label="Reportes" />
+
+</navigation>
