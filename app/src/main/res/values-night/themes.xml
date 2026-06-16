@@ -1,7 +1,26 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
+    <!-- Sobreescribe solo lo necesario para el modo oscuro -->
     <style name="Base.Theme.FinanSync" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Superficie y fondo oscuros -->
+        <item name="colorSurface">@color/colorSurfaceDark</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariantDark</item>
+        <item name="android:colorBackground">@color/colorBackgroundDark</item>
+        <item name="colorOnSurface">@color/colorOnSurfaceDark</item>
+
+        <!-- Primario se aclara un poco para legibilidad sobre fondo oscuro -->
+        <item name="colorPrimary">#90CAF9</item>
+        <item name="colorPrimaryContainer">#0D47A1</item>
+        <item name="colorOnPrimary">#003D82</item>
+        <item name="colorOnPrimaryContainer">#BBDEFB</item>
+
+        <!-- StatusBar oscura -->
+        <item name="android:statusBarColor">@color/colorBackgroundDark</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+
+        <!-- NavigationBar oscura -->
+        <item name="android:navigationBarColor">@color/colorSurfaceDark</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">false</item>
     </style>
+
 </resources>

@@ -79,6 +79,11 @@ dependencies {
     // RecyclerView (lista de movimientos)
     implementation(libs.androidx.recyclerview)
 
+    // ── Módulo 5: Reportes, Tema y Accesibilidad (Adam) ──
+    // Navigation Component
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+
     configurations.all {
         resolutionStrategy {
             // Obliga a todo el proyecto a usar las versiones estables compatibles con tu API 35

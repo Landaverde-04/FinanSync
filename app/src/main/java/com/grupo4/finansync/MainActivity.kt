@@ -9,6 +9,9 @@ import com.grupo4.finansync.data.sync.SyncManager
 import com.grupo4.finansync.ui.menu.MenuFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import android.content.Context
+import androidx.appcompat.app.AppCompatDelegate
+import com.grupo4.finansync.ui.ajustes.AjustesFragment
 
 /**
  * Pantalla principal (temporal).
@@ -21,6 +24,15 @@ class MainActivity : AppCompatActivity() {
     private val idUsuarioMock = "usuario-prueba-001"
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // ── Aplicar tema ANTES de setContentView ──────────────────────────
+        // Si se hace después, la Activity ya se dibujó con el tema anterior
+        val prefs = getSharedPreferences(AjustesFragment.PREFS, Context.MODE_PRIVATE)
+        val modoOscuro = prefs.getBoolean(AjustesFragment.KEY_MODO_OSCURO, false)
+        AppCompatDelegate.setDefaultNightMode(
+            if (modoOscuro) AppCompatDelegate.MODE_NIGHT_YES
+            else AppCompatDelegate.MODE_NIGHT_NO
+        )
+        // ─────────────────────────────────────────────────────────────────
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 

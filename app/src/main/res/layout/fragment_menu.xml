@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="@color/white">
+    android:background="?attr/colorSurface">
 
     <!-- Encabezado -->
     <TextView
@@ -60,6 +60,19 @@
         android:textSize="16sp"
         android:gravity="start|center_vertical"
         android:paddingVertical="20dp"
+        app:cornerRadius="12dp" />
+
+    <!-- Botón: Ajustes / Tema visual (M5) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAjustes"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⚙️  Ajustes"
+        android:textSize="16sp"
+        android:gravity="start|center_vertical"
+        android:paddingVertical="20dp"
+        android:layout_marginTop="16dp"
         app:cornerRadius="12dp" />
 
 </LinearLayout>
