@@ -4,10 +4,58 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- ── Módulo 1: colores de transacción ── -->
-    <color name="verde_ingreso">#2E7D32</color>      <!-- cabecera/acento de ingreso -->
-    <color name="verde_ingreso_claro">#E8F5E9</color> <!-- fondo suave de ingreso -->
-    <color name="rojo_gasto">#C62828</color>          <!-- cabecera/acento de gasto -->
-    <color name="rojo_gasto_claro">#FFEBEE</color>    <!-- fondo suave de gasto -->
-    <color name="gris_texto">#9E9E9E</color>          <!-- hints y texto secundario -->
-    <color name="gris_fondo_campo">#F5F5F5</color>    <!-- fondo de la tarjeta del formulario -->
+    <color name="verde_ingreso">#2E7D32</color>
+    <color name="verde_ingreso_claro">#E8F5E9</color>
+    <color name="rojo_gasto">#C62828</color>
+    <color name="rojo_gasto_claro">#FFEBEE</color>
+    <color name="gris_texto">#9E9E9E</color>
+    <color name="gris_fondo_campo">#F5F5F5</color>
+
+    <!-- ── Módulo 5: tema global ── -->
+    <!-- Primario: azul oscuro financiero -->
+    <color name="colorPrimary">#1565C0</color>
+    <color name="colorPrimaryDark">#0D47A1</color>
+    <color name="colorPrimaryContainer">#BBDEFB</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorOnPrimaryContainer">#0D47A1</color>
+
+    <!-- Secundario: azul medio (acentos) -->
+    <color name="colorSecondary">#1976D2</color>
+    <color name="colorSecondaryContainer">#DCEEFF</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+    <color name="colorOnSecondaryContainer">#003A75</color>
+
+    <!-- Terciario: teal (balance positivo) -->
+    <color name="colorTertiary">#00796B</color>
+    <color name="colorTertiaryContainer">#B2DFDB</color>
+
+    <!-- Superficies -->
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorSurfaceVariant">#E8EEF7</color>
+    <color name="colorBackground">#F4F6FB</color>
+    <color name="colorOnSurface">#1A1C22</color>
+    <color name="colorOnSurfaceVariant">#44474E</color>
+    <color name="colorOutline">#74777F</color>
+    <color name="colorOutlineVariant">#C4C6D0</color>
+
+    <!-- Error -->
+    <color name="colorError">#B00020</color>
+    <color name="colorErrorContainer">#FFEBEE</color>
+
+    <!-- Modo oscuro: superficies -->
+    <color name="colorSurfaceDark">#1A1C22</color>
+    <color name="colorSurfaceVariantDark">#2C2F3A</color>
+    <color name="colorBackgroundDark">#12141A</color>
+    <color name="colorOnSurfaceDark">#E2E2EA</color>
+
+    <!-- Tarjetas y divisores -->
+    <color name="colorCardLight">#FFFFFF</color>
+    <color name="colorCardDark">#22252F</color>
+    <color name="colorDivider">#E0E0E0</color>
+    <color name="colorDividerDark">#2E3140</color>
+
+    <!-- Tarjeta: blanco en claro, gris oscuro en dark -->
+    <color name="color_tarjeta">#FFFFFF</color>
+    <!-- Círculo de categoría: gris claro en claro, gris oscuro en dark -->
+    <color name="color_circulo_gris">#E0E0E0</color>
 </resources>

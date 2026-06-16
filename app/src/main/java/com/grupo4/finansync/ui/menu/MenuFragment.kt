@@ -10,6 +10,7 @@ import com.grupo4.finansync.R
 import com.grupo4.finansync.databinding.FragmentMenuBinding
 import com.grupo4.finansync.ui.transaccion.ListaTransaccionesFragment
 import com.grupo4.finansync.ui.transaccion.NuevaTransaccionFragment
+import com.grupo4.finansync.ui.ajustes.AjustesFragment
 
 /**
  * Pantalla de inicio (menú) del módulo de Transacciones.
@@ -47,6 +48,11 @@ class MenuFragment : Fragment() {
         }
         binding.btnReportes.setOnClickListener {
             Toast.makeText(requireContext(), "Reportes: próximamente", Toast.LENGTH_SHORT).show()
+        }
+
+        // Boton Ajustes -> abre pantalla de ajustes (tema oscuro)
+        binding.btnAjustes.setOnClickListener {
+            irA(AjustesFragment())
         }
     }
 
