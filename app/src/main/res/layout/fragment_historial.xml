@@ -49,6 +49,18 @@
                 android:contentDescription="Filtrar"
                 android:src="@android:drawable/ic_menu_sort_by_size"
                 android:tint="?attr/colorOnSurface" />
+
+            <!-- Botón Reportes — temporal, despues se moverá a dashbord -->
+            <ImageButton
+                android:id="@+id/btnReportesHistorial"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Reportes"
+                android:src="@android:drawable/ic_menu_agenda"
+                android:tint="?attr/colorOnSurface" />
         </com.google.android.material.appbar.MaterialToolbar>
 
         <!-- Barra de búsqueda (visible solo cuando btnBuscar está activo) -->
