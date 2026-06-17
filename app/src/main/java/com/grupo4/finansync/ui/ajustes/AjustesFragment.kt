@@ -103,7 +103,7 @@ class AjustesFragment : Fragment() {
         binding.switchHuella.setOnCheckedChangeListener(null)
 
         binding.switchModoOscuro.isChecked = prefs.getBoolean(KEY_MODO_OSCURO, false)
-        binding.switchLecturaVoz.isChecked = prefs.getBoolean(KEY_VOZ, true)
+        binding.switchLecturaVoz.isChecked = prefs.getBoolean(KEY_VOZ, false)
         binding.switchHuella.isChecked = prefs.getBoolean(KEY_HUELLA, false)
     }
 
