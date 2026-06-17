@@ -9,10 +9,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.grupo4.finansync.bd.BaseDatos
+import com.grupo4.finansync.data.remote.SupabaseCliente
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.grupo4.finansync.modelo.TransaccionEntidad
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
@@ -75,7 +81,26 @@ class DetalleTransaccionViewModel(
         viewModelScope.launch {
             try {
                 val t = _uiState.value?.transaccion ?: return@launch
-                transaccionDao.eliminarTransaccion(t)
+
+                // Ejecutar ambas eliminaciones en paralelo
+                val eliminarRoom = async(Dispatchers.IO) {
+                    transaccionDao.eliminarTransaccion(t)
+                }
+
+                val eliminarSupabase = async(Dispatchers.IO) {
+                    SupabaseCliente.cliente.postgrest["transacciones"]
+                        .delete {
+                            filter {
+                                eq("idUsuario", t.idUsuario)
+                                eq("creadoEn", t.creadoEn)
+                            }
+                        }
+                }
+
+                // Esperar que ambas terminen
+                eliminarRoom.await()
+                eliminarSupabase.await()
+
             } catch (e: Exception) {
                 _error.value = "Error al eliminar: ${e.message}"
             }

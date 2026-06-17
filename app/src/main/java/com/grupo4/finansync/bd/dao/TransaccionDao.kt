@@ -26,6 +26,8 @@ interface TransaccionDao {
 
     @Delete
     suspend fun eliminarTransaccion(transaccion: TransaccionEntidad)
+    @Query("DELETE FROM transacciones WHERE idTransaccion = :id")
+    suspend fun eliminarPorId(id: Int)
 
     @Query("SELECT * FROM transacciones WHERE idTransaccion = :idTransaccion")
     suspend fun obtenerTransaccionPorId(idTransaccion: Int): TransaccionEntidad?
