@@ -77,6 +77,18 @@ dependencies {
     // Módulo 5: Reportes y Navegación
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+    // iText 7 — generación de PDF
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    // NOTA: iText 7 es AGPL. Para uso comercial se requiere licencia.
+    // Alternativa open-source ligera: OpenPDF ("com.github.librepdf:openpdf:1.3.30")
+    // Glide — carga de imágenes de comprobantes
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    ksp("com.github.bumptech.glide:ksp:4.16.0")   // si ya usas ksp
+    // o bien: annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    // TextToSpeech — viene de Android SDK, NO requiere dependencia extra.
+    // Solo asegúrate de tener el permiso en AndroidManifest.xml:
+    // (ninguno requerido para TTS básico)
+
 
     // Módulo 2: Autenticación
     implementation("androidx.biometric:biometric:1.1.0")

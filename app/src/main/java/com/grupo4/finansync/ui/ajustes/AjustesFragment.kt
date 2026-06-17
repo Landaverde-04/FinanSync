@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import com.grupo4.finansync.bd.BaseDatos
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -58,12 +59,41 @@ class AjustesFragment : Fragment() {
     }
 
     private fun cargarDatosUsuario() {
-        // TODO: reemplazar con datos reales de SupabaseCliente.cliente.auth.currentUserOrNull()
-        val nombre = "Kevin Landaverde"
-        val correo = "kevin@correo.com"
-        binding.txtNombreUsuario.text = nombre
-        binding.txtCorreoUsuario.text = correo
-        binding.txtAvatarInicial.text = nombre.firstOrNull()?.uppercase() ?: "U"
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                // 1. Obtener el UUID del usuario autenticado en Supabase
+                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+
+                if (idUsuario == null) {
+                    binding.txtNombreUsuario.text = "Usuario"
+                    binding.txtCorreoUsuario.text = ""
+                    binding.txtAvatarInicial.text = "U"
+                    return@launch
+                }
+
+                // 2. Buscar en Room con ese UUID (ya fue guardado al registrarse)
+                val bd = BaseDatos.obtenerInstancia(requireContext())
+                val usuario = bd.usuarioDao().obtenerUsuarioPorId(idUsuario)
+
+                if (usuario != null) {
+                    // Datos completos desde Room (nombre + email)
+                    binding.txtNombreUsuario.text = usuario.nombreUsuario
+                    binding.txtCorreoUsuario.text = usuario.email
+                    binding.txtAvatarInicial.text = usuario.nombreUsuario.firstOrNull()?.uppercase() ?: "U"
+                } else {
+                    // Fallback: si por alguna razón no está en Room, usar el email de Supabase
+                    val emailSupabase = SupabaseCliente.cliente.auth.currentUserOrNull()?.email ?: ""
+                    binding.txtNombreUsuario.text = emailSupabase.substringBefore("@")
+                    binding.txtCorreoUsuario.text = emailSupabase
+                    binding.txtAvatarInicial.text = emailSupabase.firstOrNull()?.uppercase() ?: "U"
+                }
+
+            } catch (e: Exception) {
+                binding.txtNombreUsuario.text = "Usuario"
+                binding.txtCorreoUsuario.text = ""
+                binding.txtAvatarInicial.text = "U"
+            }
+        }
     }
 
     private fun cargarPreferencias() {
@@ -73,7 +103,7 @@ class AjustesFragment : Fragment() {
         binding.switchHuella.setOnCheckedChangeListener(null)
 
         binding.switchModoOscuro.isChecked = prefs.getBoolean(KEY_MODO_OSCURO, false)
-        binding.switchLecturaVoz.isChecked = prefs.getBoolean(KEY_VOZ, true)
+        binding.switchLecturaVoz.isChecked = prefs.getBoolean(KEY_VOZ, false)
         binding.switchHuella.isChecked = prefs.getBoolean(KEY_HUELLA, false)
     }
 

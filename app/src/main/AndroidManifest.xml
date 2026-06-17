@@ -8,6 +8,9 @@
     <!-- Módulo 1: GPS al registrar la transacción -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Escribir PDF en almacenamiento externo (API < 29) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -30,6 +33,16 @@
             android:name=".MainActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <!-- FileProvider para compartir el PDF (ya requerido por CameraX en M1) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>
