@@ -7,6 +7,8 @@ import androidx.lifecycle.lifecycleScope
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.sync.SyncManager
 import com.grupo4.finansync.ui.menu.MenuFragment
+import com.grupo4.finansync.data.remote.SupabaseCliente
+import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import android.content.Context
@@ -49,12 +51,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sincronizarDesdeLaNube() {
-        // Dispatchers.IO = hilo de fondo para operaciones de red/BD, no bloquea la pantalla
         lifecycleScope.launch(Dispatchers.IO) {
-            val bd = BaseDatos.obtenerInstancia(applicationContext)
-            val syncManager = SyncManager(bd)
-            val ok = syncManager.sincronizarTodo(idUsuarioMock)
-            Log.d("MainActivity", "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}")
+            try {
+                // Obtener el ID del usuario autenticado real
+                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+                if (idUsuario == null) {
+                    Log.d("MainActivity", "Sin sesión activa, omitiendo sincronización")
+                    return@launch
+                }
+                val bd = BaseDatos.obtenerInstancia(applicationContext)
+                val syncManager = SyncManager(bd)
+                val ok = syncManager.sincronizarTodo(idUsuario)
+                Log.d("MainActivity", "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error al sincronizar: ${e.message}")
+            }
         }
     }
 }
