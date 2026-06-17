@@ -15,6 +15,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
+import com.grupo4.finansync.data.remote.SupabaseCliente
+import io.github.jan.supabase.gotrue.auth
 import com.grupo4.finansync.data.repositorio.RepositorioCategoria
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.data.repositorio.RepositorioUsuario
@@ -37,7 +39,10 @@ class NuevaTransaccionFragment : Fragment() {
     private var _binding: FragmentNuevaTransaccionBinding? = null
     private val binding get() = _binding!!
 
-    private val idUsuarioMock = "usuario-prueba-001"
+    //private val idUsuarioMock = "usuario-prueba-001"
+    private fun obtenerIdUsuarioActual(): String? {
+        return SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+    }
 
     // Pestaña activa
     private var tipoActual = "gasto"
@@ -81,13 +86,19 @@ class NuevaTransaccionFragment : Fragment() {
         binding.txtHora.setOnClickListener { abrirSelectorHora() }
 
         // TEMPORAL (mock): sembrar usuario y categorías de prueba
-        viewModel.sembrarDatosDePrueba(idUsuarioMock)
+        //viewModel.sembrarDatosDePrueba(idUsuarioMock)
+        obtenerIdUsuarioActual()?.let { id ->
+            viewModel.cargarCategoriasPorTipo(id, tipoActual)
+        }
 
         // Observar las categorías y llenar el spinner cuando lleguen
         observarCategorias()
 
         // Cargar las categorías del tipo inicial (gasto)
-        viewModel.cargarCategoriasPorTipo(idUsuarioMock, tipoActual)
+        //viewModel.cargarCategoriasPorTipo(idUsuarioMock, tipoActual)
+        obtenerIdUsuarioActual()?.let { id ->
+            viewModel.cargarCategoriasPorTipo(id, tipoActual)
+        }
 
         // Guardar
         binding.btnGuardar.setOnClickListener { guardarTransaccion() }
@@ -120,7 +131,10 @@ class NuevaTransaccionFragment : Fragment() {
         // Si ya estábamos en ese tipo, no hacemos nada (evita recargar de gusto)
         if (tipoActual == tipo) return
         pintarPestania(tipo)
-        viewModel.cargarCategoriasPorTipo(idUsuarioMock, tipo)
+        //viewModel.cargarCategoriasPorTipo(idUsuarioMock, tipo)
+        obtenerIdUsuarioActual()?.let { id ->
+            viewModel.cargarCategoriasPorTipo(id, tipo)
+        }
     }
 
     /** Solo cambia los colores/íconos según el tipo (sin tocar las categorías). */
@@ -212,9 +226,19 @@ class NuevaTransaccionFragment : Fragment() {
         val descripcion = binding.inputDescripcion.text.toString().trim()
 
         // 4. Armar la entidad con la fecha ELEGIDA (no la actual)
+        val idUsuario = obtenerIdUsuarioActual()
+
+        if (idUsuario == null) {
+            Toast.makeText(
+                requireContext(),
+                "No hay usuario autenticado",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
         val transaccion = TransaccionEntidad(
             idTransaccion = 0,
-            idUsuario = idUsuarioMock,
+            idUsuario = idUsuario,
             idCategoria = categoriaElegida.idCategoria,
             monto = monto,
             tipo = tipoActual,

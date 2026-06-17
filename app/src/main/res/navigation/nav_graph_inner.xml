@@ -11,10 +11,34 @@
         android:label="Inicio" />
 
     <!-- M1/M3 reemplazará este fragment por Transacciones/Movimientos -->
-    <fragment
+    <!--<fragment
         android:id="@+id/nav_movimientos"
         android:name="com.grupo4.finansync.ui.auth.PlaceholderFragment"
-        android:label="Movimientos" />
+        android:label="Movimientos" /> -->
+
+    <!-- M5: Historial de movimientos -->
+    <fragment
+        android:id="@+id/nav_movimientos"
+        android:name="com.grupo4.finansync.ui.historial.HistorialFragment"
+        android:label="Historial">
+
+        <!-- Acción hacia el detalle de transacción -->
+        <action
+            android:id="@+id/action_historial_to_detalle"
+            app:destination="@id/detalleTransaccionFragment" />
+    </fragment>
+
+    <!-- M5: Detalle de transacción -->
+    <fragment
+        android:id="@+id/detalleTransaccionFragment"
+        android:name="com.grupo4.finansync.ui.detalle.DetalleTransaccionFragment"
+        android:label="Detalle">
+
+        <!-- Argumento: ID de la transacción a mostrar -->
+        <argument
+            android:name="idTransaccion"
+            app:argType="integer" />
+    </fragment>
 
     <!-- M4 reemplazará este fragment por Ahorro -->
     <fragment
@@ -27,5 +51,6 @@
         android:id="@+id/nav_reportes"
         android:name="com.grupo4.finansync.ui.auth.PlaceholderFragment"
         android:label="Reportes" />
+
 
 </navigation>

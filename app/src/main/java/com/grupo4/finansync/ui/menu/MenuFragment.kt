@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.grupo4.finansync.R
 import com.grupo4.finansync.databinding.FragmentMenuBinding
-import com.grupo4.finansync.ui.transaccion.ListaTransaccionesFragment
+import com.grupo4.finansync.ui.historial.HistorialFragment
 import com.grupo4.finansync.ui.transaccion.NuevaTransaccionFragment
 import com.grupo4.finansync.ui.ajustes.AjustesFragment
 
@@ -42,9 +42,9 @@ class MenuFragment : Fragment() {
             irA(NuevaTransaccionFragment())
         }
 
-        // Ver movimientos -> abre la lista de transacciones
+        // Ver movimientos -> abre Historial de transacciones
         binding.btnMovimientos.setOnClickListener {
-            irA(ListaTransaccionesFragment())
+            irA(HistorialFragment())
         }
         binding.btnReportes.setOnClickListener {
             Toast.makeText(requireContext(), "Reportes: próximamente", Toast.LENGTH_SHORT).show()
