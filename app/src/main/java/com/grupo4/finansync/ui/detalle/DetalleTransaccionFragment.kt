@@ -17,6 +17,7 @@ import com.grupo4.finansync.R
 import com.grupo4.finansync.databinding.FragmentDetalleTransaccionBinding
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import android.content.Context
 import java.util.Date
 import java.util.Locale
 
@@ -104,7 +105,20 @@ class DetalleTransaccionFragment : Fragment(), TextToSpeech.OnInitListener {
     private fun configurarAcciones() {
         // Leer en voz alta
         binding.btnLeerVoz.setOnClickListener {
-            leerEnVoz()
+
+            if (lecturaVozActivada()) {
+
+                leerEnVoz()
+
+            } else {
+
+                Toast.makeText(
+                    requireContext(),
+                    "Activa la lectura por voz en Ajustes",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            }
         }
 
         // Eliminar transacción con confirmación
@@ -213,5 +227,18 @@ class DetalleTransaccionFragment : Fragment(), TextToSpeech.OnInitListener {
                 if (t.descripcion.isNotBlank()) "Descripción: ${t.descripcion}." else ""
 
         tts?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, "detalle_tts")
+    }
+    private fun lecturaVozActivada(): Boolean {
+
+        val prefs = requireContext()
+            .getSharedPreferences(
+                "finansync_prefs",
+                Context.MODE_PRIVATE
+            )
+
+        return prefs.getBoolean(
+            "lectura_voz",
+            true
+        )
     }
 }
