@@ -52,6 +52,7 @@ abstract class BaseDatos : RoomDatabase() {
     abstract fun progresoAhorroDao(): ProgresoAhorroDao
     abstract fun presupuestoDao(): PresupuestoDao
 
+
     companion object {
 
         // @Volatile asegura que el valor de INSTANCIA sea siempre el más reciente
