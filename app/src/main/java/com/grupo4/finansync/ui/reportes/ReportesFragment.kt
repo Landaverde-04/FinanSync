@@ -259,7 +259,52 @@ class ReportesFragment : Fragment(), TextToSpeech.OnInitListener {
             binding.layoutProgresoPdf.visibility = View.GONE
 
             if (archivo != null) {
-                // Compartir el PDF con FileProvider
+                // Guardar en Descargas usando MediaStore (funciona en Android 10+)
+                try {
+                    val nombre = archivo.name
+                    val resolver = requireContext().contentResolver
+
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        // Android 10+ → MediaStore
+                        val values = android.content.ContentValues().apply {
+                            put(android.provider.MediaStore.Downloads.DISPLAY_NAME, nombre)
+                            put(android.provider.MediaStore.Downloads.MIME_TYPE, "application/pdf")
+                            put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                        }
+                        val uri = resolver.insert(
+                            android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values
+                        )
+                        uri?.let {
+                            resolver.openOutputStream(it)?.use { out ->
+                                archivo.inputStream().copyTo(out)
+                            }
+                            values.clear()
+                            values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                            resolver.update(it, values, null, null)
+                        }
+                    } else {
+                        // Android 9 y menor → copia directa
+                        val descargas = Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS
+                        )
+                        archivo.copyTo(File(descargas, nombre), overwrite = true)
+                    }
+
+                    Toast.makeText(
+                        requireContext(),
+                        "✅ PDF guardado en Descargas: $nombre",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                } catch (e: Exception) {
+                    Toast.makeText(
+                        requireContext(),
+                        "No se pudo guardar en Descargas: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+
+                // Mostrar "Abrir con…" usando el archivo privado (FileProvider)
                 val uri = FileProvider.getUriForFile(
                     requireContext(),
                     "${requireContext().packageName}.provider",
@@ -270,6 +315,7 @@ class ReportesFragment : Fragment(), TextToSpeech.OnInitListener {
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 startActivity(Intent.createChooser(intent, "Abrir PDF con…"))
+
             } else {
                 Toast.makeText(requireContext(), "Error al generar el PDF", Toast.LENGTH_SHORT).show()
             }
