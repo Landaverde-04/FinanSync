@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_inicio"
+            android:icon="@android:drawable/ic_dialog_dialer"
+            android:title="Inicio / Dashboard" />
+
+        <item
+            android:id="@+id/opcion_transacciones"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="Transacciones y Movimientos" />
+
+        <item
+            android:id="@+id/nav_planes"
+            android:icon="@android:drawable/ic_menu_slideshow"
+            android:title="Mis Planes de Ahorro" />
+
+        <item
+            android:id="@+id/nav_perfil"
+            android:icon="@android:drawable/button_onoff_indicator_on"
+            android:title="Mi Perfil" />
+    </group>
+
+    <item android:title="Otros Módulos">
+        <menu>
+            <item
+                android:id="@+id/nav_configuracion"
+                android:icon="@android:drawable/ic_menu_preferences"
+                android:title="Configuración" />
+        </menu>
+    </item>
+</menu>
