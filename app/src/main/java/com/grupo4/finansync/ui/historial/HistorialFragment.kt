@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.grupo4.finansync.R
 import com.grupo4.finansync.databinding.FragmentHistorialBinding
 import com.grupo4.finansync.ui.detalle.DetalleTransaccionFragment
+import com.grupo4.finansync.ui.reportes.ReportesFragment
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -51,6 +52,12 @@ class HistorialFragment : Fragment() {
         configurarChips()
         configurarBusqueda()
         observarViewModel()
+        binding.btnReportesHistorial.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.contenedorFragment, ReportesFragment())
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     override fun onDestroyView() {
