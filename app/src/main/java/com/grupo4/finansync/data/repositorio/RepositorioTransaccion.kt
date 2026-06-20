@@ -62,4 +62,7 @@ class RepositorioTransaccion(private val transaccionDao: TransaccionDao) {
             Log.e("RepositorioTransaccion", "Error al sincronizar eliminación: ${e.message}")
         }
     }
+
+    fun obtenerTransaccionesRecientes(idUsuario: String): Flow<List<TransaccionEntidad>> =
+        transaccionDao.obtenerTransaccionesRecientes(idUsuario)
 }

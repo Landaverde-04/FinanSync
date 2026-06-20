@@ -54,11 +54,9 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // Obtener el ID del usuario autenticado real
-                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-                if (idUsuario == null) {
-                    Log.d("MainActivity", "Sin sesión activa, omitiendo sincronización")
-                    return@launch
-                }
+                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id ?: idUsuarioMock
+
+                Log.d("MainActivity", "Iniciando sincronización para el usuario: $idUsuario")
                 val bd = BaseDatos.obtenerInstancia(applicationContext)
                 val syncManager = SyncManager(bd)
                 val ok = syncManager.sincronizarTodo(idUsuario)

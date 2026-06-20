@@ -1,181 +1,256 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F8FAFC">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:scrollbars="none">
+        android:fillViewport="true">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="24dp">
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <TextView
-                android:id="@+id/txtSaludo"
+                android:id="@+id/txtNombreApp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hola 👋"
+                android:text="FinanSync Dashboard"
                 android:textColor="#0F172A"
                 android:textSize="24sp"
-                android:fontFamily="sans-serif-black"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:fontFamily="sans-serif-black" />
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardBalance"
+                android:id="@+id/cardBalanceGeneral"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 app:cardBackgroundColor="#0F172A"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="4dp"
+                app:cardCornerRadius="20dp"
                 app:strokeWidth="0dp"
-                app:layout_constraintTop_toBottomOf="@id/txtSaludo">
+                app:cardElevation="2dp">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
                     android:padding="24dp">
 
                     <TextView
-                        android:id="@+id/lblDisponible"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Balance Disponible"
+                        android:text="BALANCE TOTAL DISPONIBLE"
                         android:textColor="#94A3B8"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif-medium"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        android:textSize="12sp"
+                        android:fontFamily="sans-serif-bold"
+                        android:letterSpacing="0.05" />
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/txtBalanceDisponible"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:orientation="horizontal"
-                        android:baselineAligned="true"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/lblDisponible">
+                        android:text="$0.00"
+                        android:textColor="#FFFFFF"
+                        android:textSize="32sp"
+                        android:fontFamily="sans-serif-black"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:weightSum="2">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#E2E8F0">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
                         <TextView
-                            android:id="@+id/txtBalanceTotal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="$1,250"
-                            android:textColor="#FFFFFF"
-                            android:textSize="36sp"
-                            android:fontFamily="sans-serif-black" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text=".00"
+                            android:text="Ingresos Mes"
                             android:textColor="#64748B"
+                            android:textSize="13sp" />
+                        <TextView
+                            android:id="@+id/txtIngresosMensuales"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="$0.00"
+                            android:textColor="#16A34A"
                             android:textSize="18sp"
-                            android:fontFamily="sans-serif-bold" />
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_marginTop="4dp" />
                     </LinearLayout>
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#E2E8F0">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gastos Mes"
+                            android:textColor="#64748B"
+                            android:textSize="13sp" />
+                        <TextView
+                            android:id="@+id/txtGastosMensuales"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="$0.00"
+                            android:textColor="#DC2626"
+                            android:textSize="18sp"
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/lblDistribucion"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Categorías de Gastos"
-                android:textColor="#0F172A"
-                android:textSize="18sp"
-                android:fontFamily="sans-serif-bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/cardBalance"/>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardGrafico"
+                android:id="@+id/btnVerReportesDetallados"
                 android:layout_width="match_parent"
-                android:layout_height="260dp"
-                android:layout_marginTop="12dp"
-                app:cardBackgroundColor="#FFFFFF"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="0dp"
-                app:layout_constraintTop_toBottomOf="@id/lblDistribucion">
+                android:layout_height="wrap_content"
+                android:text="Análisis del Período →"
+                android:textColor="#2563EB"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif-bold"
+                android:layout_marginTop="24dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
 
-                <com.github.mikephil.charting.charts.PieChart
-                    android:id="@+id/pieChartGastos"
-                    android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp"
+                android:weightSum="2">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:padding="12dp" />
-            </com.google.android.material.card.MaterialCardView>
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Distribución"
+                            android:textColor="#64748B"
+                            android:textSize="11sp"
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_gravity="center_horizontal"/>
+                        <com.github.mikephil.charting.charts.PieChart
+                            android:id="@+id/pieChartDashboard"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/lblAcciones"
-                android:layout_width="wrap_content"
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    app:cardCornerRadius="16dp"
+                    app:strokeWidth="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Comparativa Real"
+                            android:textColor="#64748B"
+                            android:textSize="11sp"
+                            android:fontFamily="sans-serif-bold"
+                            android:layout_gravity="center_horizontal"/>
+                        <com.github.mikephil.charting.charts.BarChart
+                            android:id="@+id/barChartDashboard"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginTop="4dp"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="Acciones del Módulo"
-                android:textColor="#0F172A"
-                android:textSize="18sp"
-                android:fontFamily="sans-serif-bold"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/cardGrafico"/>
+                android:orientation="horizontal">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCrearPlan"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Transacciones Recientes"
+                    android:textColor="#1E293B"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif-bold"
+                    android:layout_gravity="center_vertical"/>
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTransaccionesDashboard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="✨   Crear nuevo plan de ahorro"
-                android:textSize="15sp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="start|center_vertical"
-                android:paddingVertical="16dp"
-                app:backgroundTint="#2563EB"
-                app:cornerRadius="16dp"
-                app:layout_constraintTop_toBottomOf="@id/lblAcciones" />
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGraficoReportes"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="📊   Ver gráficos y reportes detallados"
-                android:textSize="15sp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="start|center_vertical"
-                android:paddingVertical="16dp"
-                android:textColor="#0F172A"
-                app:strokeColor="#CBD5E1"
-                app:strokeWidth="1dp"
-                app:cornerRadius="16dp"
-                app:layout_constraintTop_toBottomOf="@id/btnCrearPlan" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnListaPlanes"
-                style="?attr/materialButtonOutlinedStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="16dp"
-                android:text="📋   Consultar lista de planes"
-                android:textSize="15sp"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="start|center_vertical"
-                android:paddingVertical="16dp"
-                android:textColor="#0F172A"
-                app:strokeColor="#CBD5E1"
-                app:strokeWidth="1dp"
-                app:cornerRadius="16dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnGraficoReportes" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabCrearPlan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="Crear Plan de Ahorro"
+        app:backgroundTint="#0F172A"
+        app:tint="#FFFFFF"
+        app:srcCompat="@android:drawable/ic_input_add" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </ScrollView>
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

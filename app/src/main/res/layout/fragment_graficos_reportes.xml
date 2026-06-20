@@ -28,36 +28,55 @@
             android:layout_marginStart="8dp"/>
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="12dp"
+        android:weightSum="2">
+
+        <Spinner
+            android:id="@+id/spinnerAnio"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="36dp"
+            android:spinnerMode="dropdown"
+            android:background="@drawable/bg_spinner_perzonalizado"
+            android:elevation="1dp"/>
+
+        <Spinner
+            android:id="@+id/spinnerMes"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="36dp"
+            android:spinnerMode="dropdown"
+            android:background="@drawable/bg_spinner_perzonalizado"
+            android:elevation="1dp"/>
+    </LinearLayout>
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayoutGraficos"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         app:tabMode="fixed"
         app:tabGravity="fill">
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Pastel"/>
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Barras"/>
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Líneas"/>
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pastel"/>
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Barras"/>
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Líneas"/>
     </com.google.android.material.tabs.TabLayout>
 
     <TextView
         android:id="@+id/txtTituloGrafico"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="Ingresos vs Gastos (Últimos 6 meses)"
+        android:layout_marginTop="16dp"
+        android:text="Cargando análisis..."
         android:textStyle="bold"
         android:textColor="#64748B"/>
 
@@ -69,10 +88,28 @@
         app:cardBackgroundColor="#FFFFFF"
         app:strokeWidth="0dp">
 
-        <com.github.mikephil.charting.charts.BarChart
-            android:id="@+id/barChartReportes"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="12dp"/>
+            android:padding="12dp">
+
+            <com.github.mikephil.charting.charts.PieChart
+                android:id="@+id/pieChartReportes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="visible"/>
+
+            <com.github.mikephil.charting.charts.BarChart
+                android:id="@+id/barChartReportes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"/>
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/lineChartReportes"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"/>
+        </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

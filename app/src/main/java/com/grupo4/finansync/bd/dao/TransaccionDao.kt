@@ -47,4 +47,8 @@ interface TransaccionDao {
     // Suma total por tipo para calcular balance; devuelve 0.0 si no hay registros
     @Query("SELECT COALESCE(SUM(monto), 0.0) FROM transacciones WHERE idUsuario = :idUsuario AND tipo = :tipo")
     suspend fun sumarMontoTransaccionesPorTipo(idUsuario: String, tipo: String): Double
+
+    @Query("SELECT * FROM transacciones WHERE idUsuario = :idUsuario ORDER BY creadoEn DESC LIMIT 5")
+    fun obtenerTransaccionesRecientes(idUsuario: String): Flow<List<TransaccionEntidad>>
+
 }

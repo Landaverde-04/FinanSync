@@ -9,46 +9,45 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
+import com.github.mikephil.charting.components.Legend
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
 import com.github.mikephil.charting.utils.ColorTemplate
+import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
+import com.grupo4.finansync.data.repositorio.RepositorioCategoria
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
+import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentDashboardBinding
-import com.grupo4.finansync.data.remote.SupabaseCliente
-import io.github.jan.supabase.gotrue.auth
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.Dispatchers
-
-// IMPORTANTE: Recuerda importar los fragmentos correspondientes a tus secciones reales
-import com.grupo4.finansync.ui.dashboards.crearPlanFragment
+import com.grupo4.finansync.ui.transaccion.TransaccionAdapter
 import com.grupo4.finansync.ui.dashboards.fragmentGraficosReportes
-import com.grupo4.finansync.ui.dashboards.listaPlanesFragment
+import com.grupo4.finansync.ui.dashboards.crearPlanFragment
+import java.util.Locale
 
 class dashboardFragment : Fragment() {
 
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
 
-    // Inicialización del ViewModel conectada a la Base de Datos Room
     private val viewModel: DashboardViewModel by viewModels {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 val database = BaseDatos.obtenerInstancia(requireContext())
-                val repo = RepositorioPlanAhorro(database.planAhorroDao())
-                return DashboardViewModel(repo) as T
+                val repoPlanes = RepositorioPlanAhorro(database.planAhorroDao())
+                val repoTransacciones = RepositorioTransaccion(database.transaccionDao())
+                val repoCategorias = RepositorioCategoria(database.categoriaDao())
+                return DashboardViewModel(repoPlanes, repoTransacciones, repoCategorias) as T
             }
         }
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         return binding.root
@@ -57,94 +56,93 @@ class dashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // ── 1. NAVEGACIÓN DE LOS BOTONES DE ACCIÓN ───────────────────────────
-
-        // Clic para ir a Crear Plan
-        binding.btnCrearPlan.setOnClickListener {
-            irA(crearPlanFragment()) // Descomenta cuando esté creada la clase
+        binding.btnVerReportesDetallados.setOnClickListener {
+            irA(fragmentGraficosReportes())
         }
 
-        // Clic para ir a Gráfico Reportes
-        binding.btnGraficoReportes.setOnClickListener {
-            irA(fragmentGraficosReportes()) // Descomenta cuando esté creada la clase
+        binding.fabCrearPlan.setOnClickListener {
+            irA(listaPlanesFragment())
         }
 
-        // Clic para ir a Lista Planes
-        binding.btnListaPlanes.setOnClickListener {
-            irA(listaPlanesFragment()) // Descomenta cuando esté creada la clase
+        viewModel.balanceDisponibleReal.observe(viewLifecycleOwner) { balance ->
+            binding.txtBalanceDisponible.text = String.format(Locale.US, "$%.2f", balance ?: 0.0)
         }
 
-        // ── 2. CARGA DE MONTOS Y NOMBRE DE USUARIO ──────────────────────────
-        binding.txtSaludo.text = "Hola 👋"
-        binding.txtBalanceTotal.text = "$ 1,250.00"
+        viewModel.totalIngresosLiveData.observe(viewLifecycleOwner) { ingresos ->
+            val ing = (ingresos ?: 0.0).toFloat()
+            binding.txtIngresosMensuales.text = String.format(Locale.US, "$%.2f", ing)
+            actualizarGraficoBarras()
+        }
 
-        // Busca el usuario asíncronamente en Room usando el ID de Supabase
-        obtenerNombreUsuarioLogueado()
+        viewModel.totalGastosLiveData.observe(viewLifecycleOwner) { gastos ->
+            val gas = (gastos ?: 0.0).toFloat()
+            binding.txtGastosMensuales.text = String.format(Locale.US, "$%.2f", gas)
+            actualizarGraficoBarras()
+        }
 
-        // ── 3. COMPONENTES VISUALES Y OBSERVADORES ──────────────────────────
-        configurarGraficoPastel()
-    }
-
-    /**
-     * Reemplaza de forma segura el fragmento actual en el contenedor oficial de la Activity.
-     */
-    private fun irA(fragment: Fragment) {
-        parentFragmentManager.beginTransaction()
-            .replace(com.grupo4.finansync.R.id.contenedorFragment, fragment)
-            .addToBackStack(null) // Permite regresar al Dashboard presionando 'Atrás'
-            .commit()
-    }
-
-    /**
-     * Recupera el UUID desde Supabase y busca el nombre correspondiente en Room.
-     */
-    private fun obtenerNombreUsuarioLogueado() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val uuidActual = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-
-                if (uuidActual != null) {
-                    val usuario = withContext(Dispatchers.IO) {
-                        val db = BaseDatos.obtenerInstancia(requireContext())
-                        db.usuarioDao().obtenerUsuarioPorId(uuidActual)
-                    }
-
-                    if (usuario != null && _binding != null) {
-                        binding.txtSaludo.text = "Hola, ${usuario.nombreUsuario} 👋"
-                    }
+        viewModel.gastosPorCategoriaReal.observe(viewLifecycleOwner) { listaCategorias ->
+            if (listaCategorias != null) {
+                val entries = listaCategorias.map { PieEntry(it.monto, it.nombreCategoria) }
+                val dataSet = PieDataSet(entries.ifEmpty { listOf(PieEntry(0f, "Sin Gastos")) }, "").apply {
+                    colors = ColorTemplate.COLORFUL_COLORS.toList()
+                    valueTextSize = 10f
+                    valueTextColor = Color.WHITE
                 }
-            } catch (e: Exception) {
-                if (_binding != null) {
-                    binding.txtSaludo.text = "Hola, Usuario 👋"
+                binding.pieChartDashboard.apply {
+                    data = PieData(dataSet)
+                    description.isEnabled = false
+                    isDrawHoleEnabled = true
+                    holeRadius = 50f
+                    transparentCircleRadius = 55f
+                    setDrawEntryLabels(false)
+
+                    legend.apply {
+                        isEnabled = true
+                        verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                        horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                        orientation = Legend.LegendOrientation.HORIZONTAL
+                        setDrawInside(false)
+                        textSize = 10f
+                        textColor = Color.parseColor("#64748B")
+                        isWordWrapEnabled = true
+                    }
+                    invalidate()
                 }
+            }
+        }
+
+        viewModel.transaccionesRecientes.observe(viewLifecycleOwner) { transacciones ->
+            if (transacciones != null) {
+                val adapter = TransaccionAdapter(transacciones)
+                binding.rvTransaccionesDashboard.adapter = adapter
             }
         }
     }
 
-    /**
-     * Configura y genera el gráfico de pastel.
-     */
-    private fun configurarGraficoPastel() {
-        val entradasGastos = listOf(
-            PieEntry(400f, "Comida"),
-            PieEntry(200f, "Transporte"),
-            PieEntry(150f, "Shopping")
-        )
+    private fun irA(fragment: Fragment) {
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.contenedorFragment, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
 
-        val dataSet = PieDataSet(entradasGastos, "").apply {
-            colors = ColorTemplate.COLORFUL_COLORS.toList()
-            valueTextSize = 14f
-            valueTextColor = Color.WHITE
-        }
+    private fun actualizarGraficoBarras() {
+        val ingresos = viewModel.totalIngresosLiveData.value?.toFloat() ?: 0f
+        val gastos = viewModel.totalGastosLiveData.value?.toFloat() ?: 0f
 
-        binding.pieChartGastos.apply {
-            data = PieData(dataSet)
+        val entradaIngreso = BarEntry(1f, ingresos)
+        val entradaGasto = BarEntry(2f, gastos)
+
+        val dsIngresos = BarDataSet(listOf(entradaIngreso), "Ingresos").apply { color = Color.parseColor("#16A34A") }
+        val dsGastos = BarDataSet(listOf(entradaGasto), "Gastos").apply { color = Color.parseColor("#DC2626") }
+
+        binding.barChartDashboard.apply {
+            data = BarData(dsIngresos, dsGastos)
             description.isEnabled = false
-            isDrawHoleEnabled = true
-            holeRadius = 60f
-            centerText = "Gastos por\nCategoría"
-            setCenterTextSize(16f)
-            animateY(1000)
+            legend.isEnabled = false
+            xAxis.isEnabled = false
+            axisLeft.axisMinimum = 0f
+            axisRight.isEnabled = false
             invalidate()
         }
     }
