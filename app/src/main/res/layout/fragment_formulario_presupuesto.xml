@@ -51,7 +51,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="#E2E8F0"
+                app:strokeColor="?attr/colorOutlineVariant"
                 app:cardBackgroundColor="?attr/colorSurface">
 
                 <LinearLayout
@@ -133,7 +133,7 @@
                     android:layout_marginEnd="8dp"
                     android:text="Cancelar"
                     android:textColor="#64748B"
-                    app:strokeColor="#E2E8F0"
+                    app:strokeColor="?attr/colorOutlineVariant"
                     app:cornerRadius="12dp" />
 
                 <com.google.android.material.button.MaterialButton

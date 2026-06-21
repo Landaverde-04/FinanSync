@@ -40,6 +40,16 @@
                 android:layout_marginStart="8dp" />
 
             <ImageButton
+                android:id="@+id/btnHablarPresupuestos"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_volume_up"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="?attr/colorPrimary"
+                android:contentDescription="Escuchar presupuestos"
+                android:layout_marginEnd="8dp" />
+
+            <ImageButton
                 android:id="@+id/btnAgregarPresupuesto"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -54,13 +64,64 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-            <!-- Lista de Presupuestos (RecyclerView) -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPresupuestos"
+            <!-- Contenedor Scrollable para Lista y Gráfica -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/scrollPresupuestos"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingBottom="16dp" />
+                android:fillViewport="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Tarjeta con Gráfica de Resumen -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardGraficoPresupuestos"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginVertical="8dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="?attr/colorSurface"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutlineVariant"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Resumen de Consumo"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:textColor="?attr/colorOnSurface"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.github.mikephil.charting.charts.HorizontalBarChart
+                                android:id="@+id/chartPresupuestos"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Lista de Presupuestos (RecyclerView) -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvPresupuestos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:clipToPadding="false"
+                        android:paddingBottom="16dp" />
+                </LinearLayout>
+            </androidx.core.widget.NestedScrollView>
 
             <!-- Vista Vacía Amigable -->
             <LinearLayout

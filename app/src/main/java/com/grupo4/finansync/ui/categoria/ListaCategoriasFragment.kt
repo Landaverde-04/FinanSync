@@ -34,7 +34,8 @@ class ListaCategoriasFragment : Fragment() {
         CategoriaViewModel.Factory(repoCat, repoTrans)
     }
 
-    private lateinit var adapter: CategoriaAdapter
+    private lateinit var adapterGastos: CategoriaAdapter
+    private lateinit var adapterIngresos: CategoriaAdapter
     private lateinit var idUsuario: String
 
     override fun onCreateView(
@@ -58,12 +59,20 @@ class ListaCategoriasFragment : Fragment() {
     }
 
     private fun configurarRecyclerView() {
-        adapter = CategoriaAdapter { categoria ->
+        adapterGastos = CategoriaAdapter { categoria ->
             confirmarEliminacion(categoria)
         }
-        binding.rvCategorias.apply {
+        binding.rvCategoriasGastos.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            adapter = this@ListaCategoriasFragment.adapter
+            adapter = this@ListaCategoriasFragment.adapterGastos
+        }
+
+        adapterIngresos = CategoriaAdapter { categoria ->
+            confirmarEliminacion(categoria)
+        }
+        binding.rvCategoriasIngresos.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = this@ListaCategoriasFragment.adapterIngresos
         }
     }
 
@@ -84,7 +93,10 @@ class ListaCategoriasFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.categorias.collect { lista ->
-                    adapter.actualizarLista(lista)
+                    val gastos = lista.filter { it.tipo == "gasto" }
+                    val ingresos = lista.filter { it.tipo == "ingreso" }
+                    adapterGastos.actualizarLista(gastos)
+                    adapterIngresos.actualizarLista(ingresos)
                 }
             }
         }

@@ -49,13 +49,61 @@
                 android:contentDescription="Agregar categoría" />
         </LinearLayout>
 
-        <!-- Lista de Categorías (RecyclerView) -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCategorias"
+        <!-- Contenedor Scrollable para Listas Separadas -->
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="16dp" />
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="24dp">
+
+                <!-- Título Sección Gastos -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Categorías de Gastos"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Lista de Categorías de Gastos -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCategoriasGastos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:clipToPadding="false"
+                    android:paddingBottom="12dp" />
+
+                <!-- Título Sección Ingresos -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Categorías de Ingresos"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorTertiary"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Lista de Categorías de Ingresos -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCategoriasIngresos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:clipToPadding="false"
+                    android:paddingBottom="12dp" />
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
     </LinearLayout>
 

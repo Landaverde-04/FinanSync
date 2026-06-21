@@ -23,6 +23,8 @@ import com.grupo4.finansync.databinding.FragmentFormularioCategoriaBinding
 import com.grupo4.finansync.modelo.CategoriaEntidad
 import io.github.jan.supabase.gotrue.auth
 
+import android.util.TypedValue
+
 class FormularioCategoriaFragment : Fragment() {
 
     private var _binding: FragmentFormularioCategoriaBinding? = null
@@ -85,20 +87,27 @@ class FormularioCategoriaFragment : Fragment() {
             emojiSeleccionado = emojiPersonalizado ?: "🍔"
         }
 
-        val colorPrimario = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
-        val colorNormal = ContextCompat.getColor(requireContext(), R.color.colorOutline)
+        val colorPrimario = obtenerColorDeTema(com.google.android.material.R.attr.colorPrimary)
+        val colorNormal = obtenerColorDeTema(com.google.android.material.R.attr.colorOutline)
+        val colorFondoSeleccionado = obtenerColorDeTema(com.google.android.material.R.attr.colorPrimaryContainer)
 
         for (i in listaCards.indices) {
             if (i == indice) {
                 listaCards[i].strokeColor = colorPrimario
                 listaCards[i].strokeWidth = dpToPx(3)
-                listaCards[i].setCardBackgroundColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.colorPrimaryContainer)))
+                listaCards[i].setCardBackgroundColor(ColorStateList.valueOf(colorFondoSeleccionado))
             } else {
                 listaCards[i].strokeColor = colorNormal
                 listaCards[i].strokeWidth = dpToPx(1)
                 listaCards[i].setCardBackgroundColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), android.R.color.transparent)))
             }
         }
+    }
+
+    private fun obtenerColorDeTema(attr: Int): Int {
+        val typedValue = TypedValue()
+        requireContext().theme.resolveAttribute(attr, typedValue, true)
+        return typedValue.data
     }
 
     private fun mostrarDialogoEmojis() {
