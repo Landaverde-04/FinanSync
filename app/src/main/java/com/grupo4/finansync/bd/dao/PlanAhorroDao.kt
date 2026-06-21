@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PlanAhorroDao {
 
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarPlanAhorro(planAhorro: PlanAhorroEntidad)
 

@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.databinding.FragmentAjustesBinding
 import com.grupo4.finansync.ui.auth.AuthActivity
@@ -69,22 +70,67 @@ class AjustesFragment : Fragment() {
 
     // ── Datos del usuario ─────────────────────────────────────────────────
     private fun cargarDatosUsuario() {
-        val usuario = SupabaseCliente.cliente.auth.currentUserOrNull()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val usuarioSupabase =
+                    SupabaseCliente.cliente.auth.currentUserOrNull()
 
-        val correo = usuario?.email ?: "correo no disponible"
+                val idUsuario = usuarioSupabase?.id
 
-        val nombre = correo
-            .substringBefore("@")
-            .replace(".", " ")
-            .replace("_", " ")
-            .replaceFirstChar {
-                if (it.isLowerCase()) it.titlecase() else it.toString()
+                if (idUsuario == null) {
+                    binding.txtNombreUsuario.text = "Usuario"
+                    binding.txtCorreoUsuario.text = ""
+                    binding.txtAvatarInicial.text = "U"
+                    return@launch
+                }
+
+                val bd = BaseDatos.obtenerInstancia(requireContext())
+
+                val usuarioLocal = bd.usuarioDao().obtenerUsuarioPorId(
+                    idUsuario
+                )
+
+                if (usuarioLocal != null) {
+                    binding.txtNombreUsuario.text =
+                        usuarioLocal.nombreUsuario
+
+                    binding.txtCorreoUsuario.text =
+                        usuarioLocal.email
+
+                    binding.txtAvatarInicial.text =
+                        usuarioLocal.nombreUsuario
+                            .firstOrNull()
+                            ?.uppercase()
+                            ?: "U"
+
+                } else {
+                    val correoSupabase =
+                        usuarioSupabase.email ?: "correo no disponible"
+
+                    val nombre = correoSupabase
+                        .substringBefore("@")
+                        .replace(".", " ")
+                        .replace("_", " ")
+                        .replaceFirstChar {
+                            if (it.isLowerCase()) {
+                                it.titlecase()
+                            } else {
+                                it.toString()
+                            }
+                        }
+
+                    binding.txtNombreUsuario.text = nombre
+                    binding.txtCorreoUsuario.text = correoSupabase
+                    binding.txtAvatarInicial.text =
+                        nombre.firstOrNull()?.uppercase() ?: "U"
+                }
+
+            } catch (e: Exception) {
+                binding.txtNombreUsuario.text = "Usuario"
+                binding.txtCorreoUsuario.text = ""
+                binding.txtAvatarInicial.text = "U"
             }
-
-        binding.txtNombreUsuario.text = nombre
-        binding.txtCorreoUsuario.text = correo
-        binding.txtAvatarInicial.text =
-            nombre.firstOrNull()?.uppercase() ?: "U"
+        }
     }
 
     // ── Cargar preferencias ───────────────────────────────────────────────
@@ -330,16 +376,28 @@ class AjustesFragment : Fragment() {
                     }
 
                     /*
-                     Si la huella está activa, conservamos las credenciales cifradas.
-                     Así el usuario puede volver a entrar con huella.
-                    */
+                     * Si la huella está activa, conservamos las credenciales cifradas.
+                     * Así el usuario puede volver a entrar con huella.
+                     */
                     if (!huellaActiva) {
                         BiometricKeyManager.eliminarClave()
 
                         prefs.edit()
                             .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
                             .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
+                            .putBoolean(
+                                AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
+                                false
+                            )
                             .remove(AuthPrefs.PREF_PASSWORD_CIFRADA)
+                            .apply()
+
+                    } else {
+                        prefs.edit()
+                            .putBoolean(
+                                AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
+                                false
+                            )
                             .apply()
                     }
 

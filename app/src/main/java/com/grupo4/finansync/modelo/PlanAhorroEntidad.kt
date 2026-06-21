@@ -41,6 +41,8 @@ data class PlanAhorroEntidad(
 
     val montoMeta: Double? = null,
 
+    val nombrePlan: String?="Plan sin nombre",
+
     // Porcentaje del ingreso destinado al ahorro (0.0 – 100.0)
     val porcentaje: Double? = null,
 

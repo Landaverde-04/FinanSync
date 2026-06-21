@@ -39,7 +39,7 @@ import com.grupo4.finansync.modelo.UsuarioEntidad
         ProgresoAhorroEntidad::class,
         PresupuestoEntidad::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class BaseDatos : RoomDatabase() {
@@ -51,6 +51,7 @@ abstract class BaseDatos : RoomDatabase() {
     abstract fun planAhorroDao(): PlanAhorroDao
     abstract fun progresoAhorroDao(): ProgresoAhorroDao
     abstract fun presupuestoDao(): PresupuestoDao
+
 
     companion object {
 

@@ -7,10 +7,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
 import com.grupo4.finansync.bd.BaseDatos
+import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.data.sync.SyncManager
 import com.grupo4.finansync.ui.ajustes.AjustesFragment
 import com.grupo4.finansync.ui.auth.AuthPrefs
 import com.grupo4.finansync.ui.menu.MenuFragment
+import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -19,10 +21,6 @@ import kotlinx.coroutines.launch
  * Arranca mostrando el menú del módulo.
  */
 class MainActivity : AppCompatActivity() {
-
-    // Usuario de prueba temporal.
-    // Luego se debe reemplazar por el usuario real de Supabase Auth.
-    private val idUsuarioMock = "usuario-prueba-001"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // ── Aplicar tema ANTES de setContentView ──────────────────────────
@@ -62,16 +60,40 @@ class MainActivity : AppCompatActivity() {
 
     private fun sincronizarDesdeLaNube() {
         lifecycleScope.launch(Dispatchers.IO) {
-            val bd = BaseDatos.obtenerInstancia(applicationContext)
+            try {
+                val idUsuario =
+                    SupabaseCliente.cliente.auth.currentUserOrNull()?.id
 
-            val syncManager = SyncManager(bd)
+                if (idUsuario == null) {
+                    Log.w(
+                        "MainActivity",
+                        "No hay usuario autenticado para sincronizar"
+                    )
+                    return@launch
+                }
 
-            val ok = syncManager.sincronizarTodo(idUsuarioMock)
+                Log.d(
+                    "MainActivity",
+                    "Iniciando sincronización para el usuario: $idUsuario"
+                )
 
-            Log.d(
-                "MainActivity",
-                "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}"
-            )
+                val bd = BaseDatos.obtenerInstancia(applicationContext)
+
+                val syncManager = SyncManager(bd)
+
+                val ok = syncManager.sincronizarTodo(idUsuario)
+
+                Log.d(
+                    "MainActivity",
+                    "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}"
+                )
+
+            } catch (e: Exception) {
+                Log.e(
+                    "MainActivity",
+                    "Error al sincronizar: ${e.message}"
+                )
+            }
         }
     }
 }

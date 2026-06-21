@@ -4,14 +4,12 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlinSerialization)
     id("androidx.navigation.safeargs.kotlin") version "2.7.7"
-
 }
 
 android {
     namespace = "com.grupo4.finansync"
     compileSdk = 35
 
-    // Genera una clase de acceso por cada layout XML (ViewBinding)
     buildFeatures {
         viewBinding = true
     }
@@ -53,45 +51,57 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
-    
+
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    //Supabase
-    implementation(libs.supabase.postgrest) // Para la base de datos
-    implementation(libs.supabase.gotrue)    // Para la autenticación
-    implementation(libs.ktor.client.android) // Motor de red
+    // Supabase
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.gotrue)
+    implementation(libs.ktor.client.android)
 
-    // ── Módulo 1: Transacciones + Captura (Kevin) ──
-    // CameraX (las 4 piezas)
+    // Módulo 1: Transacciones
     implementation(libs.camerax.core)
     implementation(libs.camerax.camera2)
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
-    // OCR
     implementation(libs.mlkit.text.recognition)
-    // GPS
     implementation(libs.play.services.location)
-    // Lifecycle + Fragment (MVVM en la UI)
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.androidx.fragment.ktx)
-    // RecyclerView (lista de movimientos)
     implementation(libs.androidx.recyclerview)
 
-    // ── Módulo 5: Reportes, Tema y Accesibilidad (Adam) ──
-    // Navigation Component
+    // Módulo 5: Reportes y Navegación
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+    // iText 7 — generación de PDF
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    // NOTA: iText 7 es AGPL. Para uso comercial se requiere licencia.
+    // Alternativa open-source ligera: OpenPDF ("com.github.librepdf:openpdf:1.3.30")
+    // Glide — carga de imágenes de comprobantes
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    ksp("com.github.bumptech.glide:ksp:4.16.0")   // si ya usas ksp
+    // o bien: annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    // TextToSpeech — viene de Android SDK, NO requiere dependencia extra.
+    // Solo asegúrate de tener el permiso en AndroidManifest.xml:
+    // (ninguno requerido para TTS básico)
 
-    // ── Módulo 2: Autenticación y Navegación ──
+
+    // Módulo 2: Autenticación
     implementation("androidx.biometric:biometric:1.1.0")
+
+    // Módulo 4: Dashboards (Tus librerías)
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.2")
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.2")
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    ksp("com.github.bumptech.glide:ksp:4.16.0")
 
     configurations.all {
         resolutionStrategy {
-            // Obliga a todo el proyecto a usar las versiones estables compatibles con tu API 35
             force("androidx.core:core:1.15.0")
             force("androidx.core:core-ktx:1.15.0")
             force("androidx.activity:activity:1.9.3")

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -12,11 +13,15 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.navOptions
 import com.grupo4.finansync.MainActivity
 import com.grupo4.finansync.R
+import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.remote.SupabaseCliente
+import com.grupo4.finansync.data.sync.SyncManager
 import com.grupo4.finansync.ui.ajustes.AjustesFragment
 import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.user.UserSession
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AuthActivity : AppCompatActivity() {
 
@@ -71,9 +76,11 @@ class AuthActivity : AppCompatActivity() {
 
         val accessToken = obtenerParametro(uri, "access_token")
         val refreshToken = obtenerParametro(uri, "refresh_token")
+
         val expiresIn = obtenerParametro(uri, "expires_in")
             ?.toLongOrNull()
             ?: 3600L
+
         val tokenType = obtenerParametro(uri, "token_type")
             ?: "Bearer"
 
@@ -164,9 +171,7 @@ class AuthActivity : AppCompatActivity() {
                         user = null
                     )
                 )
-            }
-
-            else {
+            } else {
                 throw Exception("Enlace sin code ni tokens")
             }
 
@@ -288,14 +293,40 @@ class AuthActivity : AppCompatActivity() {
 
     // ── Ir a Main ─────────────────────────────────────────────────────────
     fun irAMain() {
-        startActivity(
-            Intent(
-                this,
-                MainActivity::class.java
-            )
-        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val idUsuario =
+                    SupabaseCliente.cliente.auth.currentUserOrNull()?.id
 
-        finish()
+                if (idUsuario != null) {
+                    val bd = BaseDatos.obtenerInstancia(applicationContext)
+
+                    SyncManager(bd).sincronizarTodo(idUsuario)
+
+                    Log.d(
+                        "AuthActivity",
+                        "Sincronización completada para $idUsuario"
+                    )
+                }
+
+            } catch (e: Exception) {
+                Log.e(
+                    "AuthActivity",
+                    "Error sync: ${e.message}"
+                )
+            }
+
+            withContext(Dispatchers.Main) {
+                startActivity(
+                    Intent(
+                        this@AuthActivity,
+                        MainActivity::class.java
+                    )
+                )
+
+                finish()
+            }
+        }
     }
 
     companion object {

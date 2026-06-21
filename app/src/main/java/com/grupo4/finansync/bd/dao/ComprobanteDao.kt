@@ -36,4 +36,7 @@ interface ComprobanteDao {
     // Útil para mostrar comprobantes sin OCR procesado y lanzar el análisis pendiente
     @Query("SELECT * FROM comprobantes WHERE idTransaccion = :idTransaccion AND textoOcr IS NULL")
     suspend fun obtenerComprobantesSinOcr(idTransaccion: Int): List<ComprobanteEntidad>
+
+    @Query("SELECT * FROM comprobantes WHERE idTransaccion = :idTransaccion LIMIT 1")
+    suspend fun obtenerComprobantePorTransaccion(idTransaccion: Int): ComprobanteEntidad?
 }
