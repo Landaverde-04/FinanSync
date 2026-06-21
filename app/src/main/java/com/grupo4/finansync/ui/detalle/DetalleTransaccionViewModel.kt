@@ -18,7 +18,7 @@ import com.grupo4.finansync.modelo.TransaccionEntidad
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.async
+
 import kotlinx.coroutines.launch
 
 /**
@@ -52,6 +52,15 @@ class DetalleTransaccionViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // Agregar junto a los demás StateFlow:
+    private val _eliminacionCompletada = MutableStateFlow(false)
+    val eliminacionCompletada: StateFlow<Boolean> = _eliminacionCompletada.asStateFlow()
+
+    // Mensaje de eliminacion al quedar pendiente:
+    private val _mensajeEliminacion = MutableStateFlow<String?>(null)
+    val mensajeEliminacion: StateFlow<String?> = _mensajeEliminacion.asStateFlow()
+
+    fun limpiarMensajeEliminacion() { _mensajeEliminacion.value = null }
     // ── Init ───────────────────────────────────────────────────────────────
     init {
         cargarDetalle()
@@ -79,15 +88,17 @@ class DetalleTransaccionViewModel(
     // ── Acciones ───────────────────────────────────────────────────────────
     fun eliminarTransaccion() {
         viewModelScope.launch {
+            val t = _uiState.value?.transaccion ?: return@launch
+
             try {
-                val t = _uiState.value?.transaccion ?: return@launch
+                transaccionDao.eliminarTransaccion(t)
+            } catch (e: Exception) {
+                _error.value = "Error al eliminar localmente: ${e.message}"
+                return@launch
+            }
 
-                // Ejecutar ambas eliminaciones en paralelo
-                val eliminarRoom = async(Dispatchers.IO) {
-                    transaccionDao.eliminarTransaccion(t)
-                }
-
-                val eliminarSupabase = async(Dispatchers.IO) {
+            try {
+                withContext(Dispatchers.IO) {
                     SupabaseCliente.cliente.postgrest["transacciones"]
                         .delete {
                             filter {
@@ -96,15 +107,24 @@ class DetalleTransaccionViewModel(
                             }
                         }
                 }
-
-                // Esperar que ambas terminen
-                eliminarRoom.await()
-                eliminarSupabase.await()
-
             } catch (e: Exception) {
-                _error.value = "Error al eliminar: ${e.message}"
+                android.util.Log.e("DetalleVM", "Sin red, marcando eliminación pendiente: ${e.message}")
+                guardarEliminacionPendiente(t.idUsuario, t.creadoEn)
+                _mensajeEliminacion.value =
+                    "🗑 Eliminado localmente. Se sincronizará al restablecer la conexión."
             }
+
+            // ← AQUÍ: avisar que ya terminó todo (Room + intento de Supabase)
+            _eliminacionCompletada.value = true
         }
+    }
+
+    private fun guardarEliminacionPendiente(idUsuario: String, creadoEn: Long) {
+        android.util.Log.d("PendienteDebug", "Guardando eliminación pendiente: $idUsuario / $creadoEn")
+        val prefs = getApplication<android.app.Application>()
+            .getSharedPreferences("eliminaciones_pendientes", android.content.Context.MODE_PRIVATE)
+        val clave = "elim_${idUsuario}_${creadoEn}"
+        prefs.edit().putString(clave, "$idUsuario|$creadoEn").apply()
     }
 
     fun abrirMapa(context: Context) {

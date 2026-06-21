@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
 interface CategoriaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarCategoria(categoria: CategoriaEntidad)
+    suspend fun insertarCategoria(categoria: CategoriaEntidad): Long
 
     @Update
     suspend fun actualizarCategoria(categoria: CategoriaEntidad)

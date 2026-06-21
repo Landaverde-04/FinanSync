@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
 interface PresupuestoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarPresupuesto(presupuesto: PresupuestoEntidad)
+    suspend fun insertarPresupuesto(presupuesto: PresupuestoEntidad): Long
 
     @Update
     suspend fun actualizarPresupuesto(presupuesto: PresupuestoEntidad)

@@ -84,8 +84,8 @@ class crearPlanFragment : Fragment() {
 
         binding.btnGuardarPlan.setOnClickListener {
             val nombre = binding.etNombrePlan.text.toString().trim()
-            val montoMetaVal = binding.etMontoMeta.text.toString().trim().toDoubleOrNull() ?: 0.0
-            val inputDinamico = binding.etMontoDinamico.text.toString().trim().toDoubleOrNull() ?: 0.0
+            val montoMetaRaw = binding.etMontoMeta.text.toString().trim()
+            val montoDinamicoRaw = binding.etMontoDinamico.text.toString().trim()
             val estaActivo = if (idAhorroEditar != null) binding.switchActivo.isChecked else true
 
             if (nombre.isEmpty()) {
@@ -93,24 +93,48 @@ class crearPlanFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            if (nombre.length < 4) {
+                Toast.makeText(requireContext(), "El nombre debe tener al menos 4 caracteres", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (montoMetaRaw.isEmpty()) {
+                Toast.makeText(requireContext(), "La meta total no puede estar vacía", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val montoMetaVal = montoMetaRaw.toDoubleOrNull() ?: 0.0
             if (montoMetaVal <= 0.0) {
                 Toast.makeText(requireContext(), "Ingrese una meta válida mayor a 0", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            if (montoDinamicoRaw.isEmpty()) {
+                Toast.makeText(requireContext(), "Debe ingresar el valor de fondeo elegido", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            val inputDinamico = montoDinamicoRaw.toDoubleOrNull() ?: -1.0
+            if (inputDinamico < 0.0) {
+                Toast.makeText(requireContext(), "No se permiten valores negativos", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             var porcentajeVal = 0.0
             var montoFijoVal = 0.0
+            val posicionTab = binding.tabLayoutMetodos.selectedTabPosition
 
-            val metodoSeleccionado = when (binding.tabLayoutMetodos.selectedTabPosition) {
-                0 -> {
-                    porcentajeVal = inputDinamico
-                    "porcentaje"
+            if (posicionTab == 0) {
+                if (inputDinamico > 100.0) {
+                    Toast.makeText(requireContext(), "El porcentaje no puede ser mayor a 100%", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
                 }
-                else -> {
-                    montoFijoVal = inputDinamico
-                    "fijo"
-                }
+                porcentajeVal = inputDinamico
+            } else {
+                montoFijoVal = inputDinamico
             }
+
+            val metodoSeleccionado = if (posicionTab == 0) "porcentaje" else "fijo"
 
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
@@ -160,4 +184,3 @@ class crearPlanFragment : Fragment() {
         _binding = null
     }
 }
-

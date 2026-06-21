@@ -13,6 +13,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.flow.first
+import android.util.Log
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistorialViewModel(application: Application) : AndroidViewModel(application) {
@@ -23,6 +26,11 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
 
     // Emite "" al inicio; se actualiza cuando Supabase restaura la sesión
     private val _idUsuario = MutableStateFlow("")
+    //
+    private val _mensajeSincronizacion = MutableStateFlow<String?>(null)
+    val mensajeSincronizacion: StateFlow<String?> = _mensajeSincronizacion.asStateFlow()
+
+    fun limpiarMensajeSincronizacion() { _mensajeSincronizacion.value = null }
 
     init {
         // Supabase puede tardar unos instantes en restaurar la sesión en memoria.
@@ -35,6 +43,81 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
                     return@launch
                 }
                 delay(500L)
+            }
+        }
+    }
+
+    // Sincronizado al regresar conexion WIFI:
+    fun reintentarSincronizacionPendiente() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val idUsuario = _idUsuario.value
+                if (idUsuario.isEmpty()) return@launch
+
+                val enNube = SupabaseCliente.cliente.postgrest["transacciones"]
+                    .select { filter { eq("idUsuario", idUsuario) } }
+                    .decodeList<TransaccionEntidad>()
+                val idsEnNube = enNube.map { it.idTransaccion }.toSet()
+
+                val enRoom = transaccionDao.obtenerTransaccionesPorUsuario(idUsuario).first()
+                val pendientes = enRoom.filter { it.idTransaccion !in idsEnNube }
+
+                var subidasExitosas = 0
+                pendientes.forEach { t ->
+                    try {
+                        SupabaseCliente.cliente.postgrest["transacciones"].upsert(t)
+                        subidasExitosas++
+                        Log.d("Sync", "Subida pendiente: ${t.idTransaccion}")
+                    } catch (e: Exception) {
+                        Log.e("Sync", "Sigue sin poder subir ${t.idTransaccion}: ${e.message}")
+                    }
+                }
+
+                // Avisar al usuario solo si se subió algo
+                if (subidasExitosas > 0) {
+                    _mensajeSincronizacion.value =
+                        "✅ $subidasExitosas transacción(es) pendientes sincronizada(s) exitosamente"
+                }
+            } catch (e: Exception) {
+                Log.e("Sync", "Error al reintentar: ${e.message}")
+            }
+        }
+    }
+
+    fun reintentarEliminacionesPendientes() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val prefs = getApplication<android.app.Application>()
+                .getSharedPreferences("eliminaciones_pendientes", android.content.Context.MODE_PRIVATE)
+            val pendientes = prefs.all
+            android.util.Log.d("PendienteDebug", "Pendientes encontrados: ${pendientes.size}")
+
+            var eliminacionesExitosas = 0
+
+            pendientes.forEach { (clave, valor) ->
+                try {
+                    val partes = (valor as String).split("|")
+                    val idUsuario = partes[0]
+                    val creadoEn = partes[1].toLong()
+
+                    SupabaseCliente.cliente.postgrest["transacciones"]
+                        .delete {
+                            filter {
+                                eq("idUsuario", idUsuario)
+                                eq("creadoEn", creadoEn)
+                            }
+                        }
+
+                    prefs.edit().remove(clave).apply()
+                    eliminacionesExitosas++
+                    Log.d("Sync", "Eliminación pendiente confirmada: $clave")
+                } catch (e: Exception) {
+                    Log.e("Sync", "Sigue sin poder eliminar $clave: ${e.message}")
+                }
+            }
+
+            if (eliminacionesExitosas > 0) {
+                _mensajeSincronizacion.value =
+                    "✅ $eliminacionesExitosas eliminación(es) pendiente(s) sincronizadas exitosamente"
             }
         }
     }
