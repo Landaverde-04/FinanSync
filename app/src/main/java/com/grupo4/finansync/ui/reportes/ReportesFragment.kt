@@ -34,6 +34,8 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import com.grupo4.finansync.ui.auth.AuthPrefs
 
 /**
@@ -56,6 +58,7 @@ class ReportesFragment : Fragment(), TextToSpeech.OnInitListener {
     private var ttsListo = false
 
     private val fmtFecha = SimpleDateFormat("dd/MM/yyyy", Locale("es"))
+    private val fmtFechaHora = SimpleDateFormat("dd/MM/yyyy hh:mm a", Locale("es"))
 
     // ── Lifecycle ──────────────────────────────────────────────────────────
     override fun onCreateView(
@@ -146,14 +149,21 @@ class ReportesFragment : Fragment(), TextToSpeech.OnInitListener {
 
     // ── PDF (iText 7) ──────────────────────────────────────────────────────
     private fun generarPdf() {
-        val r = vm.resumen.value
-        val transacciones = vm.transaccionesPeriodo.value
-        val categorias = vm.nombresCategorias.value
-
         binding.btnExportarPdf.isEnabled = false
         binding.layoutProgresoPdf.visibility = View.VISIBLE
 
         viewLifecycleOwner.lifecycleScope.launch {
+            // Esperar a que las categorías estén realmente cargadas (máx. unos segundos)
+            val categorias = try {
+                withTimeoutOrNull(5000L) {
+                    vm.nombresCategorias.first { it.isNotEmpty() }
+                } ?: vm.nombresCategorias.value  // si nunca llega, usa lo que haya
+            } catch (e: Exception) {
+                vm.nombresCategorias.value
+            }
+
+            val r = vm.resumen.value
+            val transacciones = vm.transaccionesPeriodo.value
             val archivo = withContext(Dispatchers.IO) {
                 try {
                     val dir = requireContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
@@ -244,8 +254,7 @@ class ReportesFragment : Fragment(), TextToSpeech.OnInitListener {
                     // ── Pie ──
                     doc.add(Paragraph(" "))
                     doc.add(
-                        Paragraph("Generado por FinanSync el ${fmtFecha.format(Date())}")
-                            .setFontSize(9f).setFontColor(ColorConstants.GRAY)
+                        Paragraph("Generado por FinanSync el ${fmtFechaHora.format(Date())}")                            .setFontSize(9f).setFontColor(ColorConstants.GRAY)
                             .setTextAlignment(TextAlignment.RIGHT)
                     )
 
