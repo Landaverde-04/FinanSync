@@ -22,21 +22,46 @@ class SplashFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? = inflater.inflate(R.layout.fragment_splash, container, false)
+    ): View? {
+        return inflater.inflate(
+            R.layout.fragment_splash,
+            container,
+            false
+        )
+    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
+
+
+        if (vieneDeLinkRecuperacion()) {
+            return
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             delay(1500)
 
+            if (!isAdded) return@launch
+
             if (viewModel.haySesionActiva()) {
-                // Sesión activa → saltar directo a MainActivity
+                // Sesión activa normal → saltar directo a MainActivity
                 (requireActivity() as AuthActivity).irAMain()
             } else {
                 // Sin sesión → ir al login
-                findNavController().navigate(R.id.action_splash_to_login)
+                findNavController().navigate(
+                    R.id.action_splash_to_login
+                )
             }
         }
+    }
+
+    private fun vieneDeLinkRecuperacion(): Boolean {
+        val uri = requireActivity().intent?.data ?: return false
+
+        return uri.scheme == "finansync" &&
+                uri.host == "auth"
     }
 }

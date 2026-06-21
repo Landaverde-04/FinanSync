@@ -44,7 +44,6 @@ class RegisterFragment : Fragment() {
             val correo = binding.etCorreo.text.toString().trim()
             val password = binding.etPassword.text.toString()
             val confirm = binding.etConfirmPassword.text.toString()
-
             if (validarCampos(nombre, correo, password, confirm)) {
                 viewModel.registrar(nombre, correo, password)
             }
@@ -82,6 +81,9 @@ class RegisterFragment : Fragment() {
                             binding.progressRegister.visibility = View.GONE
                             binding.btnCrearCuenta.isEnabled = true
                         }
+                        // Estos estados no aplican en registro, se ignoran
+                        is AuthState.RecuperacionEnviada,
+                        is AuthState.PasswordActualizada -> { }
                     }
                 }
             }
@@ -89,13 +91,10 @@ class RegisterFragment : Fragment() {
     }
 
     private fun validarCampos(
-        nombre: String,
-        correo: String,
-        password: String,
-        confirm: String
+        nombre: String, correo: String,
+        password: String, confirm: String
     ): Boolean {
         var valido = true
-
         if (nombre.isEmpty()) {
             binding.tilNombre.error = "Ingresa tu nombre"
             valido = false

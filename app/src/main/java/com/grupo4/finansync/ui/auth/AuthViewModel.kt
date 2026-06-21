@@ -1,6 +1,7 @@
 package com.grupo4.finansync.ui.auth
 
 import android.content.SharedPreferences
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.grupo4.finansync.data.remote.SupabaseCliente
@@ -18,119 +19,336 @@ class AuthViewModel(
     private val prefs: SharedPreferences
 ) : ViewModel() {
 
-    // Estado privado (mutable) — solo el ViewModel lo modifica
     private val _authState = MutableStateFlow<AuthState>(AuthState.Inactivo)
-    // Estado público (solo lectura) — los Fragments lo observan
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    // ── LOGIN ──────────────────────────────────────────────────────────────
+    // ── LOGIN con correo + contraseña ─────────────────────────────────────
     fun login(correo: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
+
             try {
-                // 1. Llamamos a Supabase Auth
                 SupabaseCliente.cliente.auth.signInWith(Email) {
                     email = correo
                     this.password = password
                 }
 
-                // 2. Obtenemos el ID del usuario autenticado
                 val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
                     ?: throw Exception("No se pudo obtener el usuario")
 
-                // 3. Guardamos flag para el biométrico
-                prefs.edit().putBoolean(PREF_SESION_PREVIA, true).apply()
+                guardarCredencialesParaBiometria(
+                    correo = correo,
+                    password = password
+                )
+
+                limpiarModoRecuperacionPassword()
 
                 _authState.value = AuthState.Exito(idUsuario)
 
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(interpretarError(e.message ?: ""))
+                _authState.value = AuthState.Error(
+                    interpretarError(e.message ?: "")
+                )
             }
         }
     }
 
-    // ── REGISTRO ───────────────────────────────────────────────────────────
+    // ── LOGIN con biométrico ──────────────────────────────────────────────
+    fun loginConBiometrico() {
+        viewModelScope.launch {
+            _authState.value = AuthState.Cargando
+
+            try {
+                val correo = prefs.getString(
+                    AuthPrefs.PREF_CORREO_GUARDADO,
+                    null
+                ) ?: throw Exception("No hay correo guardado")
+
+                val passwordCifrada = prefs.getString(
+                    AuthPrefs.PREF_PASSWORD_CIFRADA,
+                    null
+                ) ?: throw Exception("No hay contraseña guardada")
+
+                val password = BiometricKeyManager.descifrar(passwordCifrada)
+                    ?: throw Exception("No se pudieron recuperar las credenciales")
+
+                SupabaseCliente.cliente.auth.signInWith(Email) {
+                    email = correo
+                    this.password = password
+                }
+
+                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+                    ?: throw Exception("No se pudo obtener el usuario")
+
+                limpiarModoRecuperacionPassword()
+
+                _authState.value = AuthState.Exito(idUsuario)
+
+            } catch (e: Exception) {
+                limpiarCredencialesBiometricas()
+
+                _authState.value = AuthState.Error(
+                    "No se pudo iniciar sesión con huella. Ingresa tu contraseña."
+                )
+            }
+        }
+    }
+
+    // ── REGISTRO ──────────────────────────────────────────────────────────
     fun registrar(nombre: String, correo: String, password: String) {
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
+
             try {
-                // 1. Crear usuario en Supabase Auth
                 SupabaseCliente.cliente.auth.signUpWith(Email) {
                     email = correo
                     this.password = password
                 }
 
-                // 2. Obtener el UUID que Supabase asignó
                 val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
                     ?: throw Exception("No se pudo crear la cuenta")
 
-                // 3. Insertar en la tabla local (Room) y en Supabase (via repositorio)
                 val usuario = UsuarioEntidad(
                     idUsuario = idUsuario,
                     email = correo,
                     nombreUsuario = nombre,
                     creadoEn = System.currentTimeMillis()
                 )
+
                 repositorioUsuario.insertarUsuario(usuario)
+
+                guardarCredencialesParaBiometria(
+                    correo = correo,
+                    password = password
+                )
+
+                limpiarModoRecuperacionPassword()
 
                 _authState.value = AuthState.Exito(idUsuario)
 
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(interpretarError(e.message ?: ""))
+                _authState.value = AuthState.Error(
+                    interpretarError(e.message ?: "")
+                )
+            }
+        }
+    }
+
+    // ── RECUPERAR CONTRASEÑA ──────────────────────────────────────────────
+    fun recuperarContrasena(correo: String) {
+        val correoLimpio = correo.trim()
+
+        if (!Patterns.EMAIL_ADDRESS.matcher(correoLimpio).matches()) {
+            _authState.value = AuthState.Error("Ingresa un correo válido")
+            return
+        }
+
+        viewModelScope.launch {
+            _authState.value = AuthState.Cargando
+
+            try {
+                SupabaseCliente.cliente.auth.resetPasswordForEmail(
+                    email = correoLimpio,
+                    redirectUrl = "finansync://auth"
+                )
+
+                _authState.value = AuthState.RecuperacionEnviada
+
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(
+                    interpretarError(e.message ?: "")
+                )
+            }
+        }
+    }
+
+    // ── NUEVA CONTRASEÑA POR RECUPERACIÓN ─────────────────────────────────
+    fun actualizarContrasena(nuevaPassword: String) {
+        val recuperacionActiva = prefs.getBoolean(
+            AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
+            false
+        )
+
+        if (!recuperacionActiva) {
+            _authState.value = AuthState.Error(
+                "No hay una recuperación de contraseña activa. Abre nuevamente el enlace del correo."
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _authState.value = AuthState.Cargando
+
+            try {
+                /*
+                 * No validamos con currentUserOrNull().
+                 *
+                 * En recuperación de contraseña, la sesión puede estar activa
+                 * por access_token / refresh_token aunque currentUserOrNull()
+                 * todavía devuelva null.
+                 *
+                 * updateUser() será quien valide si el token de recuperación
+                 * realmente sirve.
+                 */
+                SupabaseCliente.cliente.auth.updateUser {
+                    password = nuevaPassword
+                }
+
+                limpiarCredencialesBiometricas()
+                limpiarModoRecuperacionPassword()
+
+                /*
+                 * Cerramos la sesión temporal de recuperación para volver al login.
+                 */
+                try {
+                    SupabaseCliente.cliente.auth.signOut()
+                } catch (e: Exception) {
+                    // No detener el flujo si falla el signOut
+                }
+
+                _authState.value = AuthState.PasswordActualizada
+
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error(
+                    interpretarError(e.message ?: "")
+                )
             }
         }
     }
 
     // ── LOGOUT ────────────────────────────────────────────────────────────
-    fun cerrarSesion() {
+    fun cerrarSesion(mantenerHuella: Boolean = true) {
         viewModelScope.launch {
             try {
                 SupabaseCliente.cliente.auth.signOut()
             } catch (e: Exception) {
-                // Si falla el logout remoto no es crítico
+                // No bloquear salida si falla Supabase
             }
-            prefs.edit().putBoolean(PREF_SESION_PREVIA, false).apply()
+
+            val huellaActiva = prefs.getBoolean(
+                AuthPrefs.PREF_HUELLA_ACTIVA,
+                false
+            )
+
+            if (!mantenerHuella || !huellaActiva) {
+                limpiarCredencialesBiometricas()
+            }
+
+            limpiarModoRecuperacionPassword()
+
             _authState.value = AuthState.Inactivo
         }
     }
 
-    // ── HELPERS ───────────────────────────────────────────────────────────
+    // ── HELPERS PÚBLICOS ──────────────────────────────────────────────────
+    fun haySesionActiva(): Boolean {
+        return SupabaseCliente.cliente.auth.currentUserOrNull() != null
+    }
 
-    /** Verifica si hay sesión de Supabase activa en el dispositivo */
-    fun haySesionActiva(): Boolean =
-        SupabaseCliente.cliente.auth.currentUserOrNull() != null
+    fun hayCredencialesBiometricas(): Boolean {
+        return prefs.getBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false) &&
+                prefs.getString(AuthPrefs.PREF_CORREO_GUARDADO, null) != null &&
+                prefs.getString(AuthPrefs.PREF_PASSWORD_CIFRADA, null) != null
+    }
 
-    /** Hubo un login exitoso previo → mostrar botón de huella */
-    fun haySessionPrevia(): Boolean =
-        prefs.getBoolean(PREF_SESION_PREVIA, false)
+    fun hayCredencialesGuardadas(): Boolean {
+        return prefs.getString(AuthPrefs.PREF_CORREO_GUARDADO, null) != null &&
+                prefs.getString(AuthPrefs.PREF_PASSWORD_CIFRADA, null) != null
+    }
 
-    /** Devuelve el UUID del usuario actual (lo usan los demás módulos) */
-    fun obtenerIdUsuario(): String? =
-        SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+    fun obtenerCorreoGuardado(): String {
+        return prefs.getString(AuthPrefs.PREF_CORREO_GUARDADO, "") ?: ""
+    }
 
-    /** Resetea el estado a Inactivo (útil al volver a la pantalla) */
+    fun obtenerIdUsuario(): String? {
+        return SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+    }
+
+    fun activarHuellaLocal(): Boolean {
+        if (!hayCredencialesGuardadas()) return false
+
+        prefs.edit()
+            .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, true)
+            .apply()
+
+        return true
+    }
+
+    fun desactivarHuellaLocal() {
+        limpiarCredencialesBiometricas()
+    }
+
     fun resetearEstado() {
         _authState.value = AuthState.Inactivo
+    }
+
+    // ── HELPERS PRIVADOS ──────────────────────────────────────────────────
+    private fun guardarCredencialesParaBiometria(
+        correo: String,
+        password: String
+    ) {
+        val passwordCifrada = BiometricKeyManager.cifrar(password)
+
+        prefs.edit()
+            .putBoolean(AuthPrefs.PREF_SESION_PREVIA, true)
+            .putString(AuthPrefs.PREF_CORREO_GUARDADO, correo)
+            .putString(AuthPrefs.PREF_PASSWORD_CIFRADA, passwordCifrada)
+            .apply()
+    }
+
+    private fun limpiarCredencialesBiometricas() {
+        BiometricKeyManager.eliminarClave()
+
+        prefs.edit()
+            .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
+            .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
+            .remove(AuthPrefs.PREF_PASSWORD_CIFRADA)
+            .apply()
+
+        // El correo se conserva para prellenar el campo del login.
+    }
+
+    private fun limpiarModoRecuperacionPassword() {
+        prefs.edit()
+            .putBoolean(
+                AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
+                false
+            )
+            .apply()
     }
 
     // ── TRADUCCIÓN DE ERRORES ─────────────────────────────────────────────
     private fun interpretarError(error: String): String = when {
         error.contains("Invalid login credentials", ignoreCase = true) ->
             "Correo o contraseña incorrectos"
+
         error.contains("User already registered", ignoreCase = true) ->
             "Este correo ya tiene una cuenta. Inicia sesión."
+
         error.contains("Unable to resolve host", ignoreCase = true) ||
                 error.contains("network", ignoreCase = true) ||
                 error.contains("SocketException", ignoreCase = true) ->
             "Sin conexión a internet. Verifica tu red."
+
         error.contains("Email not confirmed", ignoreCase = true) ->
             "Confirma tu correo antes de iniciar sesión"
+
         error.contains("Password should be at least", ignoreCase = true) ->
             "La contraseña debe tener al menos 6 caracteres"
-        else -> "Error: $error"
-    }
 
-    companion object {
-        private const val PREF_SESION_PREVIA = "finansync_sesion_previa"
+        error.contains("User not found", ignoreCase = true) ->
+            "No existe una cuenta con ese correo"
+
+        error.contains("rate limit", ignoreCase = true) ||
+                error.contains("security purposes", ignoreCase = true) ->
+            "Espera unos segundos antes de solicitar otro correo"
+
+        error.contains("missing sub", ignoreCase = true) ||
+                error.contains("invalid claim", ignoreCase = true) ||
+                error.contains("session", ignoreCase = true) ->
+            "La sesión de recuperación no está activa. Solicita otro correo y abre el enlace nuevamente."
+
+        else ->
+            "Error: $error"
     }
 }
