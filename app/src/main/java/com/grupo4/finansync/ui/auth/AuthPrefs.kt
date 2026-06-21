@@ -5,7 +5,23 @@ object AuthPrefs {
     const val PREFS = "finansync_prefs"
 
     const val PREF_SESION_PREVIA = "finansync_sesion_previa"
+
+    /*
+     * Indica si hay un login con huella configurado.
+     * Esta preferencia sola no basta para saber si pertenece
+     * al usuario actual.
+     */
     const val PREF_HUELLA_ACTIVA = "finansync_huella_activa"
+
+    /*
+     * Guarda el ID del usuario de Supabase que activó la huella.
+     * Así evitamos que otro usuario vea la huella como activa.
+     */
+    const val PREF_HUELLA_USUARIO_ID = "finansync_huella_usuario_id"
+
+    /*
+     * Credenciales cifradas asociadas al login biométrico.
+     */
     const val PREF_CORREO_GUARDADO = "finansync_correo_guardado"
     const val PREF_PASSWORD_CIFRADA = "finansync_password_cifrada"
 
