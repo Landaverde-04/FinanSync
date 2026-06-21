@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo redondeado de la pestaña activa. El color se cambia por código. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/tab_activa_ingreso" />
+    <corners android:radius="10dp" />
+</shape>
