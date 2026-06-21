@@ -278,16 +278,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ── Botón Cerrar sesión ── -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCerrarSesion"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="28dp"
-                android:text="Cerrar sesión"
-                android:textColor="?attr/colorError"
-                app:strokeColor="?attr/colorError" />
+
 
             <!-- Versión de la app -->
             <TextView
