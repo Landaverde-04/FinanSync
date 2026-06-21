@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC">
+    android:background="?android:attr/windowBackground">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -29,7 +29,7 @@
                     android:layout_height="48dp"
                     android:src="@android:drawable/ic_menu_revert"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    app:tint="#0F172A" />
+                    app:tint="?attr/colorOnSurface" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -37,7 +37,7 @@
                     android:text="Nuevo plan de ahorro"
                     android:textSize="22sp"
                     android:fontFamily="sans-serif-black"
-                    android:textColor="#0F172A"
+                    android:textColor="?attr/colorOnSurface"
                     android:layout_marginStart="8dp" />
             </LinearLayout>
 
@@ -45,10 +45,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="16dp"
                 app:strokeWidth="1dp"
-                app:strokeColor="#E2E8F0"
+                app:strokeColor="?attr/colorOnSurface"
                 app:cardElevation="0dp">
 
                 <LinearLayout
@@ -61,7 +61,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Nombre del Objetivo (Ej. Vacaciones, Laptop)"
-                        app:boxBackgroundColor="#F8FAFC"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -75,7 +75,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="text"
-                            android:textColor="#0F172A"
+                            android:textColor="?attr/colorOnSurface"
                             android:textSize="15sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -85,7 +85,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
                         android:hint="Meta total a alcanzar ($)"
-                        app:boxBackgroundColor="#F8FAFC"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
                         app:boxCornerRadiusTopStart="12dp"
                         app:boxCornerRadiusTopEnd="12dp"
                         app:boxCornerRadiusBottomStart="12dp"
@@ -99,14 +99,15 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="numberDecimal"
-                            android:textColor="#0F172A"
+                            android:textColor="?attr/colorOnSurface"
                             android:textSize="15sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#E2E8F0"
+                        android:background="?attr/colorOnSurface"
+                        android:alpha="0.2"
                         android:layout_marginTop="24dp" />
 
                     <TextView
@@ -114,7 +115,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
                         android:text="¿Cómo quieres fondear este ahorro?"
-                        android:textColor="#64748B"
+                        android:textColor="?attr/colorOnSurface"
+                        android:alpha="0.6"
                         android:textSize="13sp"
                         android:fontFamily="sans-serif-bold" />
 
@@ -123,10 +125,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:background="#F1F5F9"
+                        android:background="?attr/colorSurfaceVariant"
                         app:tabBackground="@android:color/transparent"
                         app:tabSelectedTextColor="#2563EB"
-                        app:tabTextColor="#64748B"
+                        app:tabTextColor="?attr/colorOnSurface"
                         app:tabIndicatorColor="#2563EB"
                         app:tabIndicatorHeight="3dp"
                         app:tabMode="fixed"
@@ -155,7 +157,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="Porcentaje de cada ingreso (%)"
-                            app:boxBackgroundColor="#F8FAFC"
+                            app:boxBackgroundColor="?attr/colorSurfaceVariant"
                             app:boxCornerRadiusTopStart="12dp"
                             app:boxCornerRadiusTopEnd="12dp"
                             app:boxCornerRadiusBottomStart="12dp"
@@ -169,7 +171,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:inputType="numberDecimal"
-                                android:textColor="#0F172A"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textSize="15sp" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
@@ -177,7 +179,8 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:background="#E2E8F0"
+                        android:background="?attr/colorOnSurface"
+                        android:alpha="0.2"
                         android:layout_marginTop="24dp" />
 
                     <LinearLayout
@@ -197,7 +200,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Estado del plan"
-                                android:textColor="#0F172A"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textSize="15sp"
                                 android:fontFamily="sans-serif-bold" />
 
@@ -205,7 +208,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Activar estrategia inmediatamente"
-                                android:textColor="#64748B"
+                                android:textColor="?attr/colorOnSurface"
+                                android:alpha="0.6"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
@@ -234,8 +238,9 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     android:text="Cancelar"
-                    android:textColor="#64748B"
-                    app:strokeColor="#E2E8F0"
+                    android:textColor="?attr/colorOnSurface"
+                    android:alpha="0.8"
+                    app:strokeColor="?attr/colorOnSurface"
                     app:cornerRadius="12dp" />
 
                 <Button
@@ -247,6 +252,7 @@
                     android:text="Guardar"
                     android:fontFamily="sans-serif-bold"
                     app:backgroundTint="#2563EB"
+                    app:tint="#FFFFFF"
                     app:cornerRadius="12dp" />
             </LinearLayout>
         </LinearLayout>

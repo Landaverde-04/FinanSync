@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFC">
+    android:background="?android:attr/windowBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,7 +24,7 @@
                 android:layout_height="48dp"
                 android:src="@android:drawable/ic_menu_revert"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                app:tint="#0F172A" />
+                app:tint="?attr/colorOnSurface" />
 
             <TextView
                 android:id="@+id/txtTituloPlanes"
@@ -33,7 +33,7 @@
                 android:text="Planes de Ahorro"
                 android:textSize="22sp"
                 android:fontFamily="sans-serif-black"
-                android:textColor="#0F172A"
+                android:textColor="?attr/colorOnSurface"
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
@@ -63,7 +63,7 @@
                 android:inputType="text"
                 android:textSize="14sp"
                 android:paddingVertical="12dp"
-                android:textColor="#0F172A"/>
+                android:textColor="?attr/colorOnSurface"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <HorizontalScrollView
@@ -86,9 +86,10 @@
                     android:layout_height="wrap_content"
                     android:text="Todos"
                     android:checked="true"
-                    app:chipBackgroundColor="@color/white"
+                    app:chipBackgroundColor="?attr/colorSurface"
                     app:chipStrokeWidth="1dp"
-                    app:chipStrokeColor="#E2E8F0"/>
+                    app:chipStrokeColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorOnSurface"/>
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipActivos"
@@ -96,9 +97,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Activos"
-                    app:chipBackgroundColor="@color/white"
+                    app:chipBackgroundColor="?attr/colorSurface"
                     app:chipStrokeWidth="1dp"
-                    app:chipStrokeColor="#E2E8F0"/>
+                    app:chipStrokeColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorOnSurface"/>
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipInactivos"
@@ -106,9 +108,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Inactivos"
-                    app:chipBackgroundColor="@color/white"
+                    app:chipBackgroundColor="?attr/colorSurface"
                     app:chipStrokeWidth="1dp"
-                    app:chipStrokeColor="#E2E8F0"/>
+                    app:chipStrokeColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorOnSurface"/>
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipCompletadas"
@@ -116,9 +119,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Completadas"
-                    app:chipBackgroundColor="@color/white"
+                    app:chipBackgroundColor="?attr/colorSurface"
                     app:chipStrokeWidth="1dp"
-                    app:chipStrokeColor="#E2E8F0"/>
+                    app:chipStrokeColor="?attr/colorOnSurface"
+                    android:textColor="?attr/colorOnSurface"/>
 
             </com.google.android.material.chip.ChipGroup>
         </HorizontalScrollView>
@@ -128,7 +132,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Metas de ahorro"
-            android:textColor="#64748B"
+            android:textColor="?attr/colorOnSurface"
+            android:alpha="0.7"
             android:textSize="14sp"
             android:fontFamily="sans-serif-medium"
             android:layout_marginTop="12dp"

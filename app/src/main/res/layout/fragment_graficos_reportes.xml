@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F8FAFC"
+    android:background="?android:attr/windowBackground"
     android:padding="16dp">
 
     <LinearLayout
@@ -17,14 +17,15 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@android:drawable/ic_menu_revert"
-            android:background="?attr/selectableItemBackgroundBorderless"/>
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="?attr/colorOnSurface" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Análisis Financiero"
             android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#1E293B"
+            android:fontFamily="sans-serif-black"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginStart="8dp"/>
     </LinearLayout>
 
@@ -59,11 +60,16 @@
             android:background="@drawable/bg_spinner_perzonalizado"
             android:elevation="1dp"/>
     </LinearLayout>
+
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tabLayoutGraficos"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:background="?attr/colorSurface"
+        app:tabSelectedTextColor="#2563EB"
+        app:tabTextColor="?attr/colorOnSurface"
+        app:tabIndicatorColor="#2563EB"
         app:tabMode="fixed"
         app:tabGravity="fill">
         <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pastel"/>
@@ -77,16 +83,19 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Cargando análisis..."
-        android:textStyle="bold"
-        android:textColor="#64748B"/>
+        android:fontFamily="sans-serif-medium"
+        android:textColor="?attr/colorOnSurface"
+        android:alpha="0.7" />
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="320dp"
         android:layout_marginTop="12dp"
         app:cardCornerRadius="16dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:strokeWidth="0dp">
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:strokeWidth="1dp"
+        app:strokeColor="?attr/colorOnSurface"
+        app:cardElevation="0dp">
 
         <FrameLayout
             android:layout_width="match_parent"

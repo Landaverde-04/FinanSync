@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
@@ -81,9 +82,9 @@ class fragmentGraficosReportes : Fragment() {
 
         database.categoriaDao().obtenerCategoriasPorUsuario(viewModel.idUsuarioReal)
             .asLiveData()
-            .observe(viewLifecycleOwner) { categorias: List<CategoriaEntidad>? ->
-                if (categorias != null) {
-                    todasLasCategorias = categorias
+            .observe(viewLifecycleOwner) { categories: List<CategoriaEntidad>? ->
+                if (categories != null) {
+                    todasLasCategorias = categories
                     procesarYFiltrarGraficos()
                 }
             }
@@ -98,10 +99,10 @@ class fragmentGraficosReportes : Fragment() {
     private fun configurarSpinnersFiltro() {
         val anioActual = Calendar.getInstance().get(Calendar.YEAR)
         val listaAnios = listOf(anioActual.toString(), (anioActual - 1).toString(), (anioActual - 2).toString())
-        binding.spinnerAnio.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, listaAnios)
+        binding.spinnerAnio.adapter = ArrayAdapter(requireContext(), com.google.android.material.R.layout.support_simple_spinner_dropdown_item, listaAnios)
 
         val listaMeses = listOf("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre")
-        binding.spinnerMes.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, listaMeses)
+        binding.spinnerMes.adapter = ArrayAdapter(requireContext(), com.google.android.material.R.layout.support_simple_spinner_dropdown_item, listaMeses)
 
         val mesActual = Calendar.getInstance().get(Calendar.MONTH)
         binding.spinnerMes.setSelection(mesActual)
@@ -142,6 +143,12 @@ class fragmentGraficosReportes : Fragment() {
         val ingresos = transaccionesDelMes.filter { it.tipo.lowercase(Locale.ROOT) == "ingreso" }.sumOf { it.monto }.toFloat()
         val gastos = transaccionesDelMes.filter { it.tipo.lowercase(Locale.ROOT) == "gasto" }.sumOf { it.monto }.toFloat()
 
+        val colorTextoGrafico = if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+            Color.WHITE
+        } else {
+            Color.parseColor("#64748B")
+        }
+
         binding.pieChartReportes.visibility = View.GONE
         binding.barChartReportes.visibility = View.GONE
         binding.lineChartReportes.visibility = View.GONE
@@ -158,7 +165,7 @@ class fragmentGraficosReportes : Fragment() {
                         PieEntry(lista.sumOf { it.monto }.toFloat(), nombreReal)
                     }
 
-                val dataSet = PieDataSet(gastosAgrupados.ifEmpty { listOf(PieEntry(00f, "Sin Datos")) }, "").apply {
+                val dataSet = PieDataSet(gastosAgrupados.ifEmpty { listOf(PieEntry(0f, "Sin Datos")) }, "").apply {
                     colors = ColorTemplate.COLORFUL_COLORS.toList()
                     valueTextSize = 12f
                     valueTextColor = Color.WHITE
@@ -166,6 +173,8 @@ class fragmentGraficosReportes : Fragment() {
                 binding.pieChartReportes.apply {
                     data = PieData(dataSet)
                     description.isEnabled = false
+                    setDrawEntryLabels(false)
+                    legend.textColor = colorTextoGrafico
                     invalidate()
                 }
             }
@@ -173,30 +182,82 @@ class fragmentGraficosReportes : Fragment() {
                 binding.txtTituloGrafico.text = "Ingresos vs Gastos - ${binding.spinnerMes.selectedItem} $anioSeleccionado"
                 binding.barChartReportes.visibility = View.VISIBLE
 
-                val dsIng = BarDataSet(listOf(BarEntry(1f, ingresos)), "Ingresos").apply { color = Color.parseColor("#2E7D32") }
-                val dsGas = BarDataSet(listOf(BarEntry(2f, gastos)), "Gastos").apply { color = Color.parseColor("#C62828") }
+                val dsIng = BarDataSet(listOf(BarEntry(1f, ingresos)), "Ingresos").apply {
+                    color = Color.parseColor("#2E7D32")
+                    valueTextColor = colorTextoGrafico
+                }
+                val dsGas = BarDataSet(listOf(BarEntry(2f, gastos)), "Gastos").apply {
+                    color = Color.parseColor("#C62828")
+                    valueTextColor = colorTextoGrafico
+                }
 
                 binding.barChartReportes.apply {
                     data = BarData(dsIng, dsGas)
                     description.isEnabled = false
                     xAxis.isEnabled = false
+                    axisLeft.textColor = colorTextoGrafico
+                    axisRight.textColor = colorTextoGrafico
+                    legend.textColor = colorTextoGrafico
                     invalidate()
                 }
             }
             2 -> {
-                binding.txtTituloGrafico.text = "Pendiente de Rendimiento Mensual"
+                binding.txtTituloGrafico.text = "Evolución de Saldo por Transacción"
                 binding.lineChartReportes.visibility = View.VISIBLE
 
-                val entries = listOf(Entry(1f, ingresos), Entry(2f, ingresos - gastos))
-                val dataSet = LineDataSet(entries, "Evolución de Saldo").apply {
+                val transaccionesOrdenadas = transaccionesDelMes.sortedBy { it.creadoEn }
+                val entries = mutableListOf<Entry>()
+
+                var saldoAcumulado = 0f
+
+                if (transaccionesOrdenadas.isEmpty()) {
+                    entries.add(Entry(0f, 0f))
+                } else {
+                    transaccionesOrdenadas.forEachIndexed { indice, transaccion ->
+                        if (transaccion.tipo.lowercase(Locale.ROOT) == "ingreso") {
+                            saldoAcumulado += transaccion.monto.toFloat()
+                        } else {
+                            saldoAcumulado -= transaccion.monto.toFloat()
+                        }
+                        entries.add(Entry((indice + 1).toFloat(), saldoAcumulado))
+                    }
+                }
+
+                val dataSet = LineDataSet(entries, "Saldo ($)").apply {
                     color = Color.parseColor("#2563EB")
                     lineWidth = 3f
-                    valueTextSize = 11f
+                    valueTextSize = 10f
+                    valueTextColor = colorTextoGrafico
+                    setCircleColor(Color.parseColor("#2563EB"))
+                    circleRadius = 5f
+                    setDrawCircleHole(true)
+                    circleHoleColor = Color.WHITE
+                    circleHoleRadius = 2.5f
+                    setDrawFilled(true)
+                    fillColor = Color.parseColor("#2563EB")
+                    fillAlpha = 25
                 }
+
                 binding.lineChartReportes.apply {
                     data = LineData(dataSet)
                     description.isEnabled = false
-                    xAxis.isEnabled = false
+
+                    xAxis.isEnabled = true
+                    xAxis.textColor = colorTextoGrafico
+                    xAxis.position = com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM
+                    xAxis.setDrawGridLines(false)
+                    xAxis.granularity = 1f
+                    xAxis.spaceMin = 0.5f
+                    xAxis.spaceMax = 0.5f
+
+                    axisLeft.textColor = colorTextoGrafico
+                    axisLeft.setDrawGridLines(true)
+                    axisLeft.resetAxisMinimum()
+                    axisLeft.resetAxisMaximum()
+
+                    axisRight.isEnabled = false
+                    legend.textColor = colorTextoGrafico
+                    animateX(600)
                     invalidate()
                 }
             }
