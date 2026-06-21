@@ -15,7 +15,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="16dp"
+            android:paddingBottom="150dp">
 
             <TextView
                 android:id="@+id/txtNombreApp"
@@ -61,7 +62,9 @@
                         android:textSize="32sp"
                         android:fontFamily="sans-serif-black"
                         android:layout_marginTop="8dp" />
+
                 </LinearLayout>
+
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
@@ -80,11 +83,13 @@
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="?attr/colorOnSurface">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -92,6 +97,7 @@
                             android:textColor="?attr/colorOnSurface"
                             android:alpha="0.6"
                             android:textSize="13sp" />
+
                         <TextView
                             android:id="@+id/txtIngresosMensuales"
                             android:layout_width="wrap_content"
@@ -101,7 +107,9 @@
                             android:textSize="18sp"
                             android:fontFamily="sans-serif-bold"
                             android:layout_marginTop="4dp" />
+
                     </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -113,11 +121,13 @@
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="?attr/colorOnSurface">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="16dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -125,6 +135,7 @@
                             android:textColor="?attr/colorOnSurface"
                             android:alpha="0.6"
                             android:textSize="13sp" />
+
                         <TextView
                             android:id="@+id/txtGastosMensuales"
                             android:layout_width="wrap_content"
@@ -134,8 +145,11 @@
                             android:textSize="18sp"
                             android:fontFamily="sans-serif-bold"
                             android:layout_marginTop="4dp" />
+
                     </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
             <TextView
@@ -167,11 +181,13 @@
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="?attr/colorOnSurface">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="8dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -180,13 +196,16 @@
                             android:alpha="0.6"
                             android:textSize="11sp"
                             android:fontFamily="sans-serif-bold"
-                            android:layout_gravity="center_horizontal"/>
+                            android:layout_gravity="center_horizontal" />
+
                         <com.github.mikephil.charting.charts.PieChart
                             android:id="@+id/pieChartDashboard"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginTop="4dp"/>
+                            android:layout_marginTop="4dp" />
+
                     </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
@@ -198,11 +217,13 @@
                     app:cardCornerRadius="16dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="?attr/colorOnSurface">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:orientation="vertical"
                         android:padding="8dp">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -211,14 +232,18 @@
                             android:alpha="0.6"
                             android:textSize="11sp"
                             android:fontFamily="sans-serif-bold"
-                            android:layout_gravity="center_horizontal"/>
+                            android:layout_gravity="center_horizontal" />
+
                         <com.github.mikephil.charting.charts.BarChart
                             android:id="@+id/barChartDashboard"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginTop="4dp"/>
+                            android:layout_marginTop="4dp" />
+
                     </LinearLayout>
+
                 </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
             <LinearLayout
@@ -234,7 +259,8 @@
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="16sp"
                     android:fontFamily="sans-serif-bold"
-                    android:layout_gravity="center_vertical"/>
+                    android:layout_gravity="center_vertical" />
+
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
@@ -246,17 +272,43 @@
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         </LinearLayout>
+
     </androidx.core.widget.NestedScrollView>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabCrearPlan"
+    <!-- Botones rápidos para registrar transacciones -->
+    <LinearLayout
+        android:id="@+id/layoutAccionesRapidas"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:contentDescription="Crear Plan de Ahorro"
-        app:backgroundTint="?attr/colorOnSurface"
-        app:tint="?attr/colorSurface"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        android:orientation="vertical">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnIngresoRapido"
+            android:layout_width="150dp"
+            android:layout_height="52dp"
+            android:text="＋  Ingreso"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="#16A34A"
+            app:cornerRadius="26dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGastoRapido"
+            android:layout_width="150dp"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:text="−  Gasto"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="#DC2626"
+            app:cornerRadius="26dp" />
+
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
