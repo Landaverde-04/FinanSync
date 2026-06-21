@@ -62,6 +62,19 @@
         android:paddingVertical="20dp"
         app:cornerRadius="12dp" />
 
+    <!-- Botón: Categorías y Presupuestos (M3) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCategoriasPresupuestos"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🏷️  Categorías y Presupuestos"
+        android:textSize="16sp"
+        android:gravity="start|center_vertical"
+        android:paddingVertical="20dp"
+        android:layout_marginTop="16dp"
+        app:cornerRadius="12dp" />
+
     <!-- Botón: Ajustes / Tema visual (M5) -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAjustes"

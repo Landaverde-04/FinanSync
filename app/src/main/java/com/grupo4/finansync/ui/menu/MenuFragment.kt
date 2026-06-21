@@ -51,6 +51,10 @@ class MenuFragment : Fragment() {
             irA(dashboardFragment())
         }
 
+        binding.btnCategoriasPresupuestos.setOnClickListener {
+            irA(com.grupo4.finansync.ui.categoria.MenuM3Fragment())
+        }
+
         // Boton Ajustes -> abre pantalla de ajustes (tema oscuro)
         binding.btnAjustes.setOnClickListener {
             irA(AjustesFragment())

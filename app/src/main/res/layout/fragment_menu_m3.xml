@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Encabezado con Botón de Regresar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="32dp">
+
+            <ImageButton
+                android:id="@+id/btnVolverMenu"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_back_modern"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="?attr/colorOnSurface"
+                android:contentDescription="Regresar al menú principal" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Categorías y Presupuestos"
+                android:textSize="22sp"
+                android:fontFamily="sans-serif-black"
+                android:textColor="?attr/colorOnSurface"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Botón: Categorías -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCategorias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🏷️  Categorías"
+            android:textSize="16sp"
+            android:gravity="start|center_vertical"
+            android:paddingVertical="20dp"
+            android:layout_marginBottom="16dp"
+            app:cornerRadius="12dp" />
+
+        <!-- Botón: Presupuestos -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPresupuestos"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📊  Presupuestos"
+            android:textSize="16sp"
+            android:gravity="start|center_vertical"
+            android:paddingVertical="20dp"
+            app:cornerRadius="12dp" />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
