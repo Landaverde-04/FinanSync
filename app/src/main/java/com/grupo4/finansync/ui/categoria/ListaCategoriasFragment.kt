@@ -21,6 +21,9 @@ import com.grupo4.finansync.databinding.FragmentListaCategoriasBinding
 import com.grupo4.finansync.modelo.CategoriaEntidad
 import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.launch
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 
 class ListaCategoriasFragment : Fragment() {
 
@@ -29,7 +32,7 @@ class ListaCategoriasFragment : Fragment() {
 
     private val vm: CategoriaViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext().applicationContext)
-        val repoCat = RepositorioCategoria(bd.categoriaDao())
+        val repoCat = RepositorioCategoria(bd.categoriaDao(), requireContext().applicationContext)
         val repoTrans = RepositorioTransaccion(bd.transaccionDao())
         CategoriaViewModel.Factory(repoCat, repoTrans)
     }
@@ -37,6 +40,7 @@ class ListaCategoriasFragment : Fragment() {
     private lateinit var adapterGastos: CategoriaAdapter
     private lateinit var adapterIngresos: CategoriaAdapter
     private lateinit var idUsuario: String
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -54,6 +58,7 @@ class ListaCategoriasFragment : Fragment() {
         configurarRecyclerView()
         configurarNavegacion()
         observarCategorias()
+        observarConectividad()
 
         vm.cargarCategorias(idUsuario)
     }
@@ -123,8 +128,31 @@ class ListaCategoriasFragment : Fragment() {
             .show()
     }
 
+    private fun observarConectividad() {
+        val connectivityManager = requireContext()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+ 
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                activity?.runOnUiThread {
+                    vm.sincronizarPendientes(idUsuario, requireContext().applicationContext)
+                }
+            }
+        }
+        connectivityManager.registerDefaultNetworkCallback(networkCallback!!)
+    }
+ 
     override fun onDestroyView() {
         super.onDestroyView()
+        networkCallback?.let { callback ->
+            try {
+                val connectivityManager = requireContext()
+                    .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                connectivityManager.unregisterNetworkCallback(callback)
+            } catch (e: Exception) {
+                // Falla silenciosa si se pierde el contexto
+            }
+        }
         _binding = null
     }
 }

@@ -1,5 +1,6 @@
 package com.grupo4.finansync.data.repositorio
 
+import android.content.Context
 import android.util.Log
 import com.grupo4.finansync.bd.dao.CategoriaDao
 import com.grupo4.finansync.data.remote.SupabaseCliente
@@ -12,7 +13,10 @@ import kotlinx.coroutines.flow.Flow
  * Expone los Flow del DAO para que el ViewModel los observe,
  * y maneja la sincronización con Supabase en las operaciones de escritura.
  */
-class RepositorioCategoria(private val categoriaDao: CategoriaDao) {
+class RepositorioCategoria(
+    private val categoriaDao: CategoriaDao,
+    private val context: Context? = null
+) {
 
     // ── LECTURA ──────────────────────────────────────────────────────────────
 
@@ -54,6 +58,16 @@ class RepositorioCategoria(private val categoriaDao: CategoriaDao) {
             }
         } catch (e: Exception) {
             Log.e("RepositorioCategoria", "Error al sincronizar eliminación: ${e.message}")
+            context?.let { ctx ->
+                try {
+                    val prefs = ctx.getSharedPreferences("eliminaciones_pendientes_m3", Context.MODE_PRIVATE)
+                    val clave = "cat_${categoria.idUsuario}_${categoria.idCategoria}"
+                    prefs.edit().putInt(clave, categoria.idCategoria).apply()
+                    Log.d("RepositorioCategoria", "Guardada eliminación pendiente de categoría local: ${categoria.idCategoria}")
+                } catch (ex: Exception) {
+                    Log.e("RepositorioCategoria", "Error al guardar eliminación pendiente: ${ex.message}")
+                }
+            }
         }
     }
 }

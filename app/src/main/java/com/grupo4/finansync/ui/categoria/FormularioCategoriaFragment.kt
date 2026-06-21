@@ -32,7 +32,7 @@ class FormularioCategoriaFragment : Fragment() {
 
     private val vm: CategoriaViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext().applicationContext)
-        val repoCat = RepositorioCategoria(bd.categoriaDao())
+        val repoCat = RepositorioCategoria(bd.categoriaDao(), requireContext().applicationContext)
         val repoTrans = RepositorioTransaccion(bd.transaccionDao())
         CategoriaViewModel.Factory(repoCat, repoTrans)
     }

@@ -1,5 +1,6 @@
 package com.grupo4.finansync.data.repositorio
 
+import android.content.Context
 import android.util.Log
 import com.grupo4.finansync.bd.dao.PresupuestoDao
 import com.grupo4.finansync.data.remote.SupabaseCliente
@@ -12,7 +13,10 @@ import kotlinx.coroutines.flow.Flow
  * El módulo M4 usa este repositorio para definir límites de gasto
  * por categoría y período, y compararlos contra las transacciones reales.
  */
-class RepositorioPresupuesto(private val presupuestoDao: PresupuestoDao) {
+class RepositorioPresupuesto(
+    private val presupuestoDao: PresupuestoDao,
+    private val context: Context? = null
+) {
 
     // ── LECTURA ──────────────────────────────────────────────────────────────
 
@@ -58,6 +62,16 @@ class RepositorioPresupuesto(private val presupuestoDao: PresupuestoDao) {
             }
         } catch (e: Exception) {
             Log.e("RepositorioPresupuesto", "Error al sincronizar eliminación: ${e.message}")
+            context?.let { ctx ->
+                try {
+                    val prefs = ctx.getSharedPreferences("eliminaciones_pendientes_m3", Context.MODE_PRIVATE)
+                    val clave = "pres_${presupuesto.idUsuario}_${presupuesto.idPresupuesto}"
+                    prefs.edit().putInt(clave, presupuesto.idPresupuesto).apply()
+                    Log.d("RepositorioPresupuesto", "Guardada eliminación pendiente de presupuesto local: ${presupuesto.idPresupuesto}")
+                } catch (ex: Exception) {
+                    Log.e("RepositorioPresupuesto", "Error al guardar eliminación pendiente: ${ex.message}")
+                }
+            }
         }
     }
 }

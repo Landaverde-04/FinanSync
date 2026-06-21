@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import kotlinx.coroutines.flow.firstOrNull
+import com.grupo4.finansync.data.remote.SupabaseCliente
+import io.github.jan.supabase.postgrest.postgrest
 
 data class PresupuestoUI(
     val entidad: PresupuestoEntidad,
@@ -109,6 +112,51 @@ class PresupuestoViewModel(
             }
         }
         return cal.timeInMillis
+    }
+ 
+    fun sincronizarPendientes(idUsuario: String, context: android.content.Context) {
+        viewModelScope.launch {
+            try {
+                // 1. Procesar eliminaciones pendientes
+                val prefs = context.getSharedPreferences("eliminaciones_pendientes_m3", android.content.Context.MODE_PRIVATE)
+                val todas = prefs.all
+                todas.keys.filter { it.startsWith("pres_${idUsuario}_") }.forEach { clave ->
+                    val idPresupuesto = prefs.getInt(clave, -1)
+                    if (idPresupuesto != -1) {
+                        try {
+                            SupabaseCliente.cliente.postgrest["presupuesto"].delete {
+                                filter { eq("idPresupuesto", idPresupuesto) }
+                            }
+                            prefs.edit().remove(clave).apply()
+                            android.util.Log.d("PresupuestoViewModel", "Eliminación pendiente de presupuesto sincronizada: $idPresupuesto")
+                        } catch (e: Exception) {
+                            android.util.Log.e("PresupuestoViewModel", "Error al eliminar presupuesto pendiente: ${e.message}")
+                        }
+                    }
+                }
+
+                // 2. Procesar inserciones pendientes
+                val locales = repositorioPresupuesto.obtenerPresupuestosPorUsuario(idUsuario).firstOrNull() ?: emptyList()
+                if (locales.isNotEmpty()) {
+                    val remotas = SupabaseCliente.cliente.postgrest["presupuesto"]
+                        .select { filter { eq("idUsuario", idUsuario) } }
+                        .decodeList<PresupuestoEntidad>()
+                    val idsEnNube = remotas.map { it.idPresupuesto }.toSet()
+
+                    val pendientes = locales.filter { it.idPresupuesto !in idsEnNube }
+                    pendientes.forEach { pres ->
+                        try {
+                            SupabaseCliente.cliente.postgrest["presupuesto"].upsert(pres)
+                            android.util.Log.d("PresupuestoViewModel", "Inserción pendiente de presupuesto sincronizada: ${pres.idPresupuesto}")
+                        } catch (e: Exception) {
+                            android.util.Log.e("PresupuestoViewModel", "Error al subir presupuesto pendiente: ${e.message}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PresupuestoViewModel", "Error en sincronizarPendientes: ${e.message}")
+            }
+        }
     }
 
     class Factory(

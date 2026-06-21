@@ -29,8 +29,8 @@ class FormularioPresupuestoFragment : Fragment() {
 
     private val vm: PresupuestoViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext().applicationContext)
-        val repoPres = RepositorioPresupuesto(bd.presupuestoDao())
-        val repoCat = RepositorioCategoria(bd.categoriaDao())
+        val repoPres = RepositorioPresupuesto(bd.presupuestoDao(), requireContext().applicationContext)
+        val repoCat = RepositorioCategoria(bd.categoriaDao(), requireContext().applicationContext)
         val repoTrans = RepositorioTransaccion(bd.transaccionDao())
         PresupuestoViewModel.Factory(repoPres, repoCat, repoTrans)
     }
