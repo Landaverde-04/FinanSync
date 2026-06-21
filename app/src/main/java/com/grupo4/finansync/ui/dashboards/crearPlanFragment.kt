@@ -25,6 +25,7 @@ class crearPlanFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var repositorio: RepositorioPlanAhorro
+    private var idAhorroEditar: Int? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -54,11 +55,38 @@ class crearPlanFragment : Fragment() {
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
 
+        binding.switchActivo.visibility = View.GONE
+
+        arguments?.let { args ->
+            if (args.containsKey("idAhorroEditar")) {
+                idAhorroEditar = args.getInt("idAhorroEditar")
+                binding.switchActivo.visibility = View.VISIBLE
+
+                lifecycleScope.launch {
+                    val plan = repositorio.obtenerPlanAhorroPorId(idAhorroEditar!!)
+                    plan?.let {
+                        binding.etNombrePlan.setText(it.nombrePlan)
+                        binding.etMontoMeta.setText(it.montoMeta?.toString() ?: "")
+                        binding.switchActivo.isChecked = it.activo
+
+                        if (it.metodo == "porcentaje") {
+                            binding.tabLayoutMetodos.getTabAt(0)?.select()
+                            binding.etMontoDinamico.setText(it.porcentaje?.toString() ?: "")
+                        } else {
+                            binding.tabLayoutMetodos.getTabAt(1)?.select()
+                            binding.etMontoDinamico.setText(it.montoFijo?.toString() ?: "")
+                        }
+                        binding.btnGuardarPlan.text = "Actualizar Plan"
+                    }
+                }
+            }
+        }
+
         binding.btnGuardarPlan.setOnClickListener {
             val nombre = binding.etNombrePlan.text.toString().trim()
             val montoMetaVal = binding.etMontoMeta.text.toString().trim().toDoubleOrNull() ?: 0.0
             val inputDinamico = binding.etMontoDinamico.text.toString().trim().toDoubleOrNull() ?: 0.0
-            val estaActivo = binding.switchActivo.isChecked
+            val estaActivo = if (idAhorroEditar != null) binding.switchActivo.isChecked else true
 
             if (nombre.isEmpty()) {
                 Toast.makeText(requireContext(), "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
@@ -88,17 +116,30 @@ class crearPlanFragment : Fragment() {
                 try {
                     val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id ?: "usuario-prueba-001"
 
-                    val nuevoPlan = PlanAhorroEntidad(
-                        idUsuario = idUsuario,
-                        metodo = metodoSeleccionado,
-                        porcentaje = porcentajeVal,
-                        montoFijo = montoFijoVal,
-                        montoMeta = montoMetaVal,
-                        nombrePlan=nombre,
-                        activo = estaActivo
-                    )
-
-                    repositorio.insertarPlanAhorro(nuevoPlan)
+                    if (idAhorroEditar != null) {
+                        val planEditado = PlanAhorroEntidad(
+                            idAhorro = idAhorroEditar!!,
+                            idUsuario = idUsuario,
+                            metodo = metodoSeleccionado,
+                            porcentaje = porcentajeVal,
+                            montoFijo = montoFijoVal,
+                            montoMeta = montoMetaVal,
+                            nombrePlan = nombre,
+                            activo = estaActivo
+                        )
+                        repositorio.actualizarPlanAhorro(planEditado)
+                    } else {
+                        val nuevoPlan = PlanAhorroEntidad(
+                            idUsuario = idUsuario,
+                            metodo = metodoSeleccionado,
+                            porcentaje = porcentajeVal,
+                            montoFijo = montoFijoVal,
+                            montoMeta = montoMetaVal,
+                            nombrePlan = nombre,
+                            activo = estaActivo
+                        )
+                        repositorio.insertarPlanAhorro(nuevoPlan)
+                    }
 
                     withContext(Dispatchers.Main) {
                         Toast.makeText(requireContext(), "¡Plan guardado exitosamente!", Toast.LENGTH_SHORT).show()
