@@ -17,6 +17,10 @@ import com.grupo4.finansync.ui.detalle.DetalleTransaccionFragment
 import com.grupo4.finansync.ui.reportes.ReportesFragment
 import kotlinx.coroutines.launch
 import java.util.Locale
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.widget.Toast
 
 /**
  * Pantalla 1 — Historial de movimientos.
@@ -52,12 +56,27 @@ class HistorialFragment : Fragment() {
         configurarChips()
         configurarBusqueda()
         observarViewModel()
+        observarConectividad() //llama a la sincronizacion por internet
         binding.btnReportesHistorial.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.contenedorFragment, ReportesFragment())
                 .addToBackStack(null)
                 .commit()
         }
+    }
+
+    private fun observarConectividad() {
+        val connectivityManager = requireContext()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                // Se restableció la conexión → reintentar pendientes
+                vm.reintentarSincronizacionPendiente()
+                vm.reintentarEliminacionesPendientes()
+            }
+        }
+        connectivityManager.registerDefaultNetworkCallback(callback)
     }
 
     override fun onDestroyView() {
@@ -147,6 +166,15 @@ class HistorialFragment : Fragment() {
                                 else R.color.rojo_gasto
                             )
                         )
+                    }
+                }
+                // Mensaje de sincronización pendiente
+                launch {
+                    vm.mensajeSincronizacion.collect { mensaje ->
+                        mensaje?.let {
+                            Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                            vm.limpiarMensajeSincronizacion()
+                        }
                     }
                 }
             }

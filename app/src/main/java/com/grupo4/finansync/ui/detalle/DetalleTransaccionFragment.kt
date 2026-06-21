@@ -128,8 +128,7 @@ class DetalleTransaccionFragment : Fragment(), TextToSpeech.OnInitListener {
                 .setMessage("¿Estás seguro? Esta acción no se puede deshacer.")
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Eliminar") { _, _ ->
-                    vm.eliminarTransaccion()
-                    parentFragmentManager.popBackStack()
+                    vm.eliminarTransaccion()  // ← solo dispara, ya NO navega aquí
                 }
                 .show()
         }
@@ -195,6 +194,23 @@ class DetalleTransaccionFragment : Fragment(), TextToSpeech.OnInitListener {
                         msg?.let {
                             Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
                             vm.limpiarError()
+                        }
+                    }
+                }
+
+                launch {
+                    vm.eliminacionCompletada.collect { completada ->
+                        if (completada) {
+                            parentFragmentManager.popBackStack()
+                        }
+                    }
+                }
+
+                launch {
+                    vm.mensajeEliminacion.collect { mensaje ->
+                        mensaje?.let {
+                            Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                            vm.limpiarMensajeEliminacion()
                         }
                     }
                 }
