@@ -99,9 +99,15 @@ class NuevaTransaccionFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         actualizarTextosFechaHora()
-        // Restaurar la pestaña que estaba activa antes de ir a la cámara.
-        // Si Android recreó el fragment, la leemos del estado guardado.
-        savedInstanceState?.getString(ESTADO_TIPO)?.let { tipoActual = it }
+
+        tipoActual = savedInstanceState?.getString(ESTADO_TIPO)
+            ?: arguments?.getString(ARG_TIPO_TRANSACCION)
+                    ?: TIPO_GASTO
+
+        if (tipoActual != TIPO_INGRESO && tipoActual != TIPO_GASTO) {
+            tipoActual = TIPO_GASTO
+        }
+
         pintarPestania(tipoActual)
 
         binding.tabIngreso.setOnClickListener { seleccionarTipo("ingreso") }
@@ -640,5 +646,9 @@ class NuevaTransaccionFragment : Fragment() {
 
     companion object {
         private const val ESTADO_TIPO = "tipo_actual"
+
+        const val ARG_TIPO_TRANSACCION = "tipo_transaccion"
+        const val TIPO_INGRESO = "ingreso"
+        const val TIPO_GASTO = "gasto"
     }
 }

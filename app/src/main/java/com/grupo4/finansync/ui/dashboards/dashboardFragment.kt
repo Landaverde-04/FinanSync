@@ -23,8 +23,8 @@ import com.grupo4.finansync.data.repositorio.RepositorioCategoria
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentDashboardBinding
+import com.grupo4.finansync.ui.transaccion.NuevaTransaccionFragment
 import com.grupo4.finansync.ui.transaccion.TransaccionAdapter
-import com.grupo4.finansync.ui.dashboards.fragmentGraficosReportes
 import java.util.Locale
 
 class dashboardFragment : Fragment() {
@@ -35,58 +35,128 @@ class dashboardFragment : Fragment() {
     private val viewModel: DashboardViewModel by viewModels {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            override fun <T : ViewModel> create(
+                modelClass: Class<T>
+            ): T {
                 val database = BaseDatos.obtenerInstancia(requireContext())
-                val repoPlanes = RepositorioPlanAhorro(database.planAhorroDao())
-                val repoTransacciones = RepositorioTransaccion(database.transaccionDao())
-                val repoCategorias = RepositorioCategoria(database.categoriaDao())
-                return DashboardViewModel(repoPlanes, repoTransacciones, repoCategorias) as T
+
+                val repoPlanes = RepositorioPlanAhorro(
+                    database.planAhorroDao()
+                )
+
+                val repoTransacciones = RepositorioTransaccion(
+                    database.transaccionDao()
+                )
+
+                val repoCategorias = RepositorioCategoria(
+                    database.categoriaDao()
+                )
+
+                return DashboardViewModel(
+                    repoPlanes,
+                    repoTransacciones,
+                    repoCategorias
+                ) as T
             }
         }
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentDashboardBinding.inflate(
+            inflater,
+            container,
+            false
+        )
+
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.btnVerReportesDetallados.setOnClickListener {
             irA(fragmentGraficosReportes())
         }
 
-        binding.fabCrearPlan.setOnClickListener {
-            irA(listaPlanesFragment())
+        binding.btnIngresoRapido.setOnClickListener {
+            irATransaccion(
+                NuevaTransaccionFragment.TIPO_INGRESO
+            )
+        }
+
+        binding.btnGastoRapido.setOnClickListener {
+            irATransaccion(
+                NuevaTransaccionFragment.TIPO_GASTO
+            )
         }
 
         viewModel.balanceDisponibleReal.observe(viewLifecycleOwner) { balance ->
-            binding.txtBalanceDisponible.text = String.format(Locale.US, "$%.2f", balance ?: 0.0)
+            binding.txtBalanceDisponible.text =
+                String.format(
+                    Locale.US,
+                    "$%.2f",
+                    balance ?: 0.0
+                )
         }
 
         viewModel.totalIngresosLiveData.observe(viewLifecycleOwner) { ingresos ->
             val ing = (ingresos ?: 0.0).toFloat()
-            binding.txtIngresosMensuales.text = String.format(Locale.US, "$%.2f", ing)
+
+            binding.txtIngresosMensuales.text =
+                String.format(
+                    Locale.US,
+                    "$%.2f",
+                    ing
+                )
+
             actualizarGraficoBarras()
         }
 
         viewModel.totalGastosLiveData.observe(viewLifecycleOwner) { gastos ->
             val gas = (gastos ?: 0.0).toFloat()
-            binding.txtGastosMensuales.text = String.format(Locale.US, "$%.2f", gas)
+
+            binding.txtGastosMensuales.text =
+                String.format(
+                    Locale.US,
+                    "$%.2f",
+                    gas
+                )
+
             actualizarGraficoBarras()
         }
 
         viewModel.gastosPorCategoriaReal.observe(viewLifecycleOwner) { listaCategorias ->
             if (listaCategorias != null) {
-                val entries = listaCategorias.map { PieEntry(it.monto, it.nombreCategoria) }
-                val dataSet = PieDataSet(entries.ifEmpty { listOf(PieEntry(0f, "Sin Gastos")) }, "").apply {
+                val entries = listaCategorias.map {
+                    PieEntry(
+                        it.monto,
+                        it.nombreCategoria
+                    )
+                }
+
+                val dataSet = PieDataSet(
+                    entries.ifEmpty {
+                        listOf(
+                            PieEntry(
+                                0f,
+                                "Sin Gastos"
+                            )
+                        )
+                    },
+                    ""
+                ).apply {
                     colors = ColorTemplate.COLORFUL_COLORS.toList()
                     valueTextSize = 10f
                     valueTextColor = Color.WHITE
                 }
+
                 binding.pieChartDashboard.apply {
                     data = PieData(dataSet)
                     description.isEnabled = false
@@ -97,14 +167,18 @@ class dashboardFragment : Fragment() {
 
                     legend.apply {
                         isEnabled = true
-                        verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-                        horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
-                        orientation = Legend.LegendOrientation.HORIZONTAL
+                        verticalAlignment =
+                            Legend.LegendVerticalAlignment.BOTTOM
+                        horizontalAlignment =
+                            Legend.LegendHorizontalAlignment.CENTER
+                        orientation =
+                            Legend.LegendOrientation.HORIZONTAL
                         setDrawInside(false)
                         textSize = 10f
                         textColor = Color.parseColor("#64748B")
                         isWordWrapEnabled = true
                     }
+
                     invalidate()
                 }
             }
@@ -118,25 +192,70 @@ class dashboardFragment : Fragment() {
         }
     }
 
-    private fun irA(fragment: Fragment) {
+    private fun irATransaccion(
+        tipo: String
+    ) {
+        val fragment = NuevaTransaccionFragment().apply {
+            arguments = Bundle().apply {
+                putString(
+                    NuevaTransaccionFragment.ARG_TIPO_TRANSACCION,
+                    tipo
+                )
+            }
+        }
+
+        irA(fragment)
+    }
+
+    private fun irA(
+        fragment: Fragment
+    ) {
         parentFragmentManager.beginTransaction()
-            .replace(R.id.contenedorFragment, fragment)
+            .replace(
+                R.id.contenedorFragment,
+                fragment
+            )
             .addToBackStack(null)
             .commit()
     }
 
     private fun actualizarGraficoBarras() {
-        val ingresos = viewModel.totalIngresosLiveData.value?.toFloat() ?: 0f
-        val gastos = viewModel.totalGastosLiveData.value?.toFloat() ?: 0f
+        val ingresos =
+            viewModel.totalIngresosLiveData.value?.toFloat() ?: 0f
 
-        val entradaIngreso = BarEntry(1f, ingresos)
-        val entradaGasto = BarEntry(2f, gastos)
+        val gastos =
+            viewModel.totalGastosLiveData.value?.toFloat() ?: 0f
 
-        val dsIngresos = BarDataSet(listOf(entradaIngreso), "Ingresos").apply { color = Color.parseColor("#16A34A") }
-        val dsGastos = BarDataSet(listOf(entradaGasto), "Gastos").apply { color = Color.parseColor("#DC2626") }
+        val entradaIngreso = BarEntry(
+            1f,
+            ingresos
+        )
+
+        val entradaGasto = BarEntry(
+            2f,
+            gastos
+        )
+
+        val dsIngresos = BarDataSet(
+            listOf(entradaIngreso),
+            "Ingresos"
+        ).apply {
+            color = Color.parseColor("#16A34A")
+        }
+
+        val dsGastos = BarDataSet(
+            listOf(entradaGasto),
+            "Gastos"
+        ).apply {
+            color = Color.parseColor("#DC2626")
+        }
 
         binding.barChartDashboard.apply {
-            data = BarData(dsIngresos, dsGastos)
+            data = BarData(
+                dsIngresos,
+                dsGastos
+            )
+
             description.isEnabled = false
             legend.isEnabled = false
             xAxis.isEnabled = false
