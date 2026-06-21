@@ -1,7 +1,9 @@
 package com.grupo4.finansync.ui.transaccion
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,10 +11,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.location.LocationServices
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.remote.SupabaseCliente
@@ -53,6 +57,23 @@ class NuevaTransaccionFragment : Fragment() {
 
     private val fechaSeleccionada: Calendar = Calendar.getInstance()
 
+    // Ubicación capturada al abrir el formulario (null si no hay permiso o no se obtuvo)
+    private var latitudActual: Double? = null
+    private var longitudActual: Double? = null
+
+    // Cliente de GPS de Google
+    private val clienteUbicacion by lazy {
+        LocationServices.getFusedLocationProviderClient(requireContext())
+    }
+
+    // Lanzador del permiso de ubicación
+    private val permisoUbicacion = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { concedido ->
+        if (concedido) obtenerUbicacion()
+        // Si lo niega, no pasa nada: se guardará sin ubicación.
+    }
+
     private val viewModel: TransaccionViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext())
         TransaccionViewModel.Factory(
@@ -60,7 +81,8 @@ class NuevaTransaccionFragment : Fragment() {
             RepositorioUsuario(bd.usuarioDao()),
             RepositorioCategoria(bd.categoriaDao()),
             RepositorioPlanAhorro(bd.planAhorroDao()),
-            RepositorioProgresoAhorro(bd.progresoAhorroDao())
+            RepositorioProgresoAhorro(bd.progresoAhorroDao()),
+            com.grupo4.finansync.data.repositorio.RepositorioComprobante(bd.comprobanteDao())
         )
     }
 
@@ -77,7 +99,10 @@ class NuevaTransaccionFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         actualizarTextosFechaHora()
-        pintarPestania("gasto")
+        // Restaurar la pestaña que estaba activa antes de ir a la cámara.
+        // Si Android recreó el fragment, la leemos del estado guardado.
+        savedInstanceState?.getString(ESTADO_TIPO)?.let { tipoActual = it }
+        pintarPestania(tipoActual)
 
         binding.tabIngreso.setOnClickListener { seleccionarTipo("ingreso") }
         binding.tabGasto.setOnClickListener { seleccionarTipo("gasto") }
@@ -93,8 +118,152 @@ class NuevaTransaccionFragment : Fragment() {
         observarCategorias()
         observarPlanes()
         configurarAhorro()
+        configurarCamara()
+        configurarCalculadora()
+        pedirUbicacion()
 
         binding.btnGuardar.setOnClickListener { guardarTransaccion() }
+    }
+
+    // ── CALCULADORA ──────────────────────────────────────────────────────────────
+
+    private fun configurarCalculadora() {
+        // Abrir la calculadora al tocar el ícono junto al monto
+        binding.btnCalculadora.setOnClickListener {
+            CalculadoraDialog().show(parentFragmentManager, "calculadora")
+        }
+        // Recibir el resultado y ponerlo en el campo Monto
+        parentFragmentManager.setFragmentResultListener(
+            CalculadoraDialog.RESULTADO_CALC,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val valor = bundle.getDouble(CalculadoraDialog.KEY_RESULTADO, 0.0)
+            if (valor > 0) binding.inputMonto.setText(formatearMonto(valor))
+        }
+    }
+
+    /** Quita el ".0" si el resultado es entero, para que el campo monto se vea limpio. */
+    private fun formatearMonto(n: Double): String =
+        if (n == n.toLong().toDouble()) n.toLong().toString() else n.toString()
+
+    // ── GPS ──────────────────────────────────────────────────────────────────────
+
+    /** Pide permiso de ubicación (si hace falta) y captura la posición actual. */
+    private fun pedirUbicacion() {
+        // Al apagar el switch, atenuamos el texto (la ubicación no se incluirá)
+        binding.switchUbicacion.setOnCheckedChangeListener { _, marcado ->
+            binding.txtUbicacion.alpha = if (marcado) 1f else 0.4f
+        }
+
+        val tienePermiso = ContextCompat.checkSelfPermission(
+            requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (tienePermiso) obtenerUbicacion()
+        else permisoUbicacion.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    /** Devuelve la ubicación solo si el switch está activado; si no, null. */
+    private fun ubicacionFinal(): Pair<Double?, Double?> =
+        if (binding.switchUbicacion.isChecked) latitudActual to longitudActual
+        else null to null
+
+    /** Obtiene la última ubicación conocida, la guarda y muestra el nombre del lugar. */
+    private fun obtenerUbicacion() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            binding.txtUbicacion.text = "📍 Ubicación no disponible"
+            return
+        }
+
+        clienteUbicacion.lastLocation
+            .addOnSuccessListener { ubicacion ->
+                if (ubicacion != null) {
+                    latitudActual = ubicacion.latitude
+                    longitudActual = ubicacion.longitude
+                    mostrarNombreLugar(ubicacion.latitude, ubicacion.longitude)
+                } else {
+                    binding.txtUbicacion.text = "📍 Ubicación no disponible"
+                }
+            }
+            .addOnFailureListener {
+                binding.txtUbicacion.text = "📍 Ubicación no disponible"
+            }
+    }
+
+    /** Convierte lat/long a un nombre legible (ciudad, país) usando Geocoder. */
+    private fun mostrarNombreLugar(lat: Double, lon: Double) {
+        try {
+            val geocoder = android.location.Geocoder(requireContext(), Locale("es"))
+            // getFromLocation está deprecada en API 33+, pero funciona en el rango 24-35 del proyecto
+            @Suppress("DEPRECATION")
+            val direcciones = geocoder.getFromLocation(lat, lon, 1)
+            val nombre = direcciones?.firstOrNull()?.let { dir ->
+                // Armamos "Ciudad, País" con lo que haya disponible
+                listOfNotNull(dir.locality ?: dir.subAdminArea, dir.countryName)
+                    .joinToString(", ")
+            }
+            binding.txtUbicacion.text = if (!nombre.isNullOrBlank())
+                "📍 $nombre"
+            else
+                "📍 %.4f, %.4f".format(lat, lon)  // si no hay nombre, mostramos coordenadas
+        } catch (e: Exception) {
+            binding.txtUbicacion.text = "📍 %.4f, %.4f".format(lat, lon)
+        }
+    }
+
+    // ── CÁMARA + OCR ─────────────────────────────────────────────────────────────
+
+    // Datos del comprobante capturado (se guardan al registrar la transacción)
+    private var rutaFotoComprobante: String? = null
+    private var textoOcrComprobante: String? = null
+
+    private fun configurarCamara() {
+        // Abrir la pantalla de cámara al tocar el botón de la barra inferior
+        binding.btnCamara.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.contenedorFragment, CapturaComprobanteFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+
+        // Recibir el resultado del OCR (monto, fecha, ruta de la foto)
+        parentFragmentManager.setFragmentResultListener(
+            CapturaComprobanteFragment.RESULTADO_OCR,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val monto = bundle.getDouble(CapturaComprobanteFragment.KEY_MONTO, 0.0)
+            val fecha = bundle.getString(CapturaComprobanteFragment.KEY_FECHA)
+            rutaFotoComprobante = bundle.getString(CapturaComprobanteFragment.KEY_RUTA_FOTO)
+            textoOcrComprobante = bundle.getString(CapturaComprobanteFragment.KEY_TEXTO_OCR)
+
+            // Autocompletar el monto si se detectó
+            if (monto > 0) binding.inputMonto.setText(monto.toString())
+
+            // Aplicar la fecha detectada si vino en formato dd/mm/yyyy
+            if (!fecha.isNullOrBlank()) aplicarFechaDetectada(fecha)
+
+            Toast.makeText(requireContext(), "Comprobante adjuntado", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Intenta interpretar una fecha "dd/mm/yyyy" del OCR y aplicarla al Calendar. */
+    private fun aplicarFechaDetectada(fechaTexto: String) {
+        val partes = fechaTexto.split("/", "-")
+        if (partes.size == 3) {
+            val dia = partes[0].toIntOrNull() ?: return
+            val mes = partes[1].toIntOrNull() ?: return
+            var anio = partes[2].toIntOrNull() ?: return
+            if (anio < 100) anio += 2000  // "26" -> 2026
+            try {
+                fechaSeleccionada.set(Calendar.YEAR, anio)
+                fechaSeleccionada.set(Calendar.MONTH, mes - 1)  // Calendar usa 0-11
+                fechaSeleccionada.set(Calendar.DAY_OF_MONTH, dia)
+                actualizarTextosFechaHora()
+            } catch (_: Exception) { /* fecha inválida: la ignoramos */ }
+        }
     }
 
     // ── CATEGORÍAS ─────────────────────────────────────────────────────────────
@@ -125,22 +294,43 @@ class NuevaTransaccionFragment : Fragment() {
 
     private fun pintarPestania(tipo: String) {
         tipoActual = tipo
-        val verde = ContextCompat.getColor(requireContext(), R.color.verde_ingreso)
-        val rojo = ContextCompat.getColor(requireContext(), R.color.rojo_gasto)
-        val gris = ContextCompat.getColor(requireContext(), R.color.gris_texto)
+        val ctx = requireContext()
+        val verde = ContextCompat.getColor(ctx, R.color.verde_ingreso)
+        val rojo = ContextCompat.getColor(ctx, R.color.rojo_gasto)
+        val gris = ContextCompat.getColor(ctx, R.color.gris_texto)
 
         if (tipo == "ingreso") {
+            // Pestaña: ingreso resaltada con fondo, gasto apagado
+            binding.tabIngreso.setBackgroundResource(R.drawable.fondo_tab_activa)
+            binding.tabIngreso.background.setTint(ContextCompat.getColor(ctx, R.color.tab_activa_ingreso))
+            binding.tabGasto.background = null
             binding.lblIngreso.setTextColor(verde)
-            binding.indicadorIngreso.setBackgroundColor(verde)
             binding.lblGasto.setTextColor(gris)
-            binding.indicadorGasto.setBackgroundColor(Color.TRANSPARENT)
+
+            // Cabecera de monto: verde
+            val fondo = ContextCompat.getColor(ctx, R.color.cabecera_ingreso)
+            val texto = ContextCompat.getColor(ctx, R.color.cabecera_ingreso_texto)
+            binding.cabeceraMonto.background.setTint(fondo)
+            binding.lblMonto.setTextColor(texto)
+            binding.inputMonto.setTextColor(texto)
+            binding.btnCalculadora.setColorFilter(texto)
             binding.iconoTipo.text = "➕"
             binding.iconoTipo.background.setTint(verde)
         } else {
+            // Pestaña: gasto resaltada, ingreso apagado
+            binding.tabGasto.setBackgroundResource(R.drawable.fondo_tab_activa)
+            binding.tabGasto.background.setTint(ContextCompat.getColor(ctx, R.color.tab_activa_gasto))
+            binding.tabIngreso.background = null
             binding.lblGasto.setTextColor(rojo)
-            binding.indicadorGasto.setBackgroundColor(rojo)
             binding.lblIngreso.setTextColor(gris)
-            binding.indicadorIngreso.setBackgroundColor(Color.TRANSPARENT)
+
+            // Cabecera de monto: rojo
+            val fondo = ContextCompat.getColor(ctx, R.color.cabecera_gasto)
+            val texto = ContextCompat.getColor(ctx, R.color.cabecera_gasto_texto)
+            binding.cabeceraMonto.background.setTint(fondo)
+            binding.lblMonto.setTextColor(texto)
+            binding.inputMonto.setTextColor(texto)
+            binding.btnCalculadora.setColorFilter(texto)
             binding.iconoTipo.text = "➖"
             binding.iconoTipo.background.setTint(rojo)
         }
@@ -284,8 +474,9 @@ class NuevaTransaccionFragment : Fragment() {
     private fun actualizarTextosFechaHora() {
         val formatoFecha = SimpleDateFormat("dd/MMM/yyyy", Locale("es"))
         val formatoHora = SimpleDateFormat("hh:mm a", Locale("es"))
-        binding.txtFecha.text = formatoFecha.format(fechaSeleccionada.time)
-        binding.txtHora.text = formatoHora.format(fechaSeleccionada.time)
+        // Mantenemos el emoji de los chips
+        binding.txtFecha.text = "📅 ${formatoFecha.format(fechaSeleccionada.time)}"
+        binding.txtHora.text = "🕐 ${formatoHora.format(fechaSeleccionada.time)}"
     }
 
     // ── GUARDAR ──────────────────────────────────────────────────────────────────
@@ -337,11 +528,11 @@ class NuevaTransaccionFragment : Fragment() {
             monto = monto,
             tipo = tipoActual,
             descripcion = descripcion,
-            latitud = null,
-            longitud = null,
+            latitud = ubicacionFinal().first,
+            longitud = ubicacionFinal().second,
             creadoEn = fechaSeleccionada.timeInMillis
         )
-        viewModel.agregarTransaccion(transaccion)
+        viewModel.agregarTransaccion(transaccion, rutaFotoComprobante, textoOcrComprobante)
         Toast.makeText(requireContext(), "Transacción guardada", Toast.LENGTH_SHORT).show()
         finalizarGuardado()
     }
@@ -408,12 +599,12 @@ class NuevaTransaccionFragment : Fragment() {
                 monto = ingresoRestante,
                 tipo = "ingreso",
                 descripcion = descripcion,
-                latitud = null,
-                longitud = null,
+                latitud = ubicacionFinal().first,
+                longitud = ubicacionFinal().second,
                 creadoEn = fechaSeleccionada.timeInMillis
             )
 
-            viewModel.guardarIngresoConAhorro(transaccion, aportes)
+            viewModel.guardarIngresoConAhorro(transaccion, aportes, rutaFotoComprobante, textoOcrComprobante)
             Toast.makeText(
                 requireContext(),
                 "Guardado: ingreso $%.2f, ahorro total $%.2f".format(ingresoRestante, totalAhorro),
@@ -428,12 +619,26 @@ class NuevaTransaccionFragment : Fragment() {
         binding.inputDescripcion.text?.clear()
         binding.checkAhorro.isChecked = false
         limpiarFilas()
+        // Limpiar el comprobante para la próxima transacción
+        rutaFotoComprobante = null
+        textoOcrComprobante = null
         fechaSeleccionada.timeInMillis = System.currentTimeMillis()
         actualizarTextosFechaHora()
+    }
+
+    // Guardar la pestaña activa para que sobreviva si Android recrea el fragment
+    // (por ejemplo, al volver de la cámara o al rotar la pantalla).
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(ESTADO_TIPO, tipoActual)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        private const val ESTADO_TIPO = "tipo_actual"
     }
 }

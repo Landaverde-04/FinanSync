@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pantalla de captura del comprobante con CameraX.
+     PreviewView muestra la cámara en vivo; abajo el botón de capturar. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Vista de la cámara en vivo (CameraX la dibuja aquí) -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewCamara"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Botón cerrar (arriba a la izquierda) -->
+    <ImageView
+        android:id="@+id/btnCerrar"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|start"
+        android:layout_margin="16dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="Cerrar"
+        app:tint="@android:color/white"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+    <!-- Texto de ayuda -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="24dp"
+        android:text="Encuadra el comprobante"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:background="#88000000"
+        android:padding="8dp" />
+
+    <!-- Indicador de "procesando" mientras corre el OCR -->
+    <ProgressBar
+        android:id="@+id/progresoOcr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- Botón de capturar (círculo abajo al centro) -->
+    <ImageView
+        android:id="@+id/btnCapturar"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="40dp"
+        android:src="@android:drawable/ic_menu_camera"
+        android:background="@drawable/circulo_capturar"
+        android:padding="16dp"
+        android:contentDescription="Capturar" />
+
+</FrameLayout>

@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.grupo4.finansync.data.repositorio.RepositorioCategoria
+import com.grupo4.finansync.data.repositorio.RepositorioComprobante
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.data.repositorio.RepositorioProgresoAhorro
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.data.repositorio.RepositorioUsuario
 import com.grupo4.finansync.modelo.CategoriaEntidad
+import com.grupo4.finansync.modelo.ComprobanteEntidad
 import com.grupo4.finansync.modelo.PlanAhorroEntidad
 import com.grupo4.finansync.modelo.ProgresoAhorroEntidad
 import com.grupo4.finansync.modelo.TransaccionEntidad
@@ -25,7 +27,9 @@ class TransaccionViewModel(
     private val repositorioCategoria: RepositorioCategoria,
     // Repositorios de ahorro: para destinar parte de un ingreso a un plan de ahorro
     private val repositorioPlanAhorro: RepositorioPlanAhorro,
-    private val repositorioProgresoAhorro: RepositorioProgresoAhorro
+    private val repositorioProgresoAhorro: RepositorioProgresoAhorro,
+    // Para guardar la foto + texto OCR del comprobante ligado a la transacción
+    private val repositorioComprobante: RepositorioComprobante
 ) : ViewModel() {
 
     // Lista de categorías del usuario, que el spinner va a observar.
@@ -162,9 +166,35 @@ class TransaccionViewModel(
     }
 
     // 3. ESCRITURA: Mandamos a guardar y el ViewModel maneja el hilo secundario (Coroutines)
-    fun agregarTransaccion(transaccion: TransaccionEntidad) {
+    //    rutaFoto/textoOcr son opcionales: si vienen, se guarda un comprobante ligado.
+    fun agregarTransaccion(
+        transaccion: TransaccionEntidad,
+        rutaFoto: String? = null,
+        textoOcr: String? = null
+    ) {
         viewModelScope.launch {
-            repositorio.insertarTransaccion(transaccion)
+            val idTransaccion = repositorio.insertarTransaccion(transaccion).toInt()
+            guardarComprobanteSiHay(idTransaccion, rutaFoto, textoOcr, transaccion.creadoEn)
+        }
+    }
+
+    /** Si hay foto, guarda el comprobante ligado a la transacción recién creada. */
+    private suspend fun guardarComprobanteSiHay(
+        idTransaccion: Int,
+        rutaFoto: String?,
+        textoOcr: String?,
+        creadoEn: Long
+    ) {
+        if (!rutaFoto.isNullOrBlank()) {
+            repositorioComprobante.insertarComprobante(
+                ComprobanteEntidad(
+                    idComprobante = 0,
+                    idTransaccion = idTransaccion,
+                    urlImagen = rutaFoto,
+                    textoOcr = textoOcr,
+                    creadoEn = creadoEn
+                )
+            )
         }
     }
 
@@ -180,11 +210,14 @@ class TransaccionViewModel(
      */
     fun guardarIngresoConAhorro(
         transaccion: TransaccionEntidad,
-        aportes: List<Pair<Int, Double>>
+        aportes: List<Pair<Int, Double>>,
+        rutaFoto: String? = null,
+        textoOcr: String? = null
     ) {
         viewModelScope.launch {
-            // 1. Guardar la transacción de ingreso (ya reducida)
-            repositorio.insertarTransaccion(transaccion)
+            // 1. Guardar la transacción de ingreso (ya reducida) y su comprobante si hay
+            val idTransaccion = repositorio.insertarTransaccion(transaccion).toInt()
+            guardarComprobanteSiHay(idTransaccion, rutaFoto, textoOcr, transaccion.creadoEn)
 
             // 2. Por cada plan elegido, registrar el dinero aportado
             for ((idPlan, monto) in aportes) {
@@ -218,7 +251,8 @@ class TransaccionViewModel(
         private val repositorioUsuario: RepositorioUsuario,
         private val repositorioCategoria: RepositorioCategoria,
         private val repositorioPlanAhorro: RepositorioPlanAhorro,
-        private val repositorioProgresoAhorro: RepositorioProgresoAhorro
+        private val repositorioProgresoAhorro: RepositorioProgresoAhorro,
+        private val repositorioComprobante: RepositorioComprobante
     ) : ViewModelProvider.Factory {
 
         // Android llama a este método cuando necesita crear el ViewModel
@@ -227,7 +261,7 @@ class TransaccionViewModel(
             @Suppress("UNCHECKED_CAST")
             return TransaccionViewModel(
                 repositorio, repositorioUsuario, repositorioCategoria,
-                repositorioPlanAhorro, repositorioProgresoAhorro
+                repositorioPlanAhorro, repositorioProgresoAhorro, repositorioComprobante
             ) as T
         }
     }

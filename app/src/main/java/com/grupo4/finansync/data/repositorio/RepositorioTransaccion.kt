@@ -34,13 +34,17 @@ class RepositorioTransaccion(private val transaccionDao: TransaccionDao) {
 
     // ── ESCRITURA ─────────────────────────────────────────────────────────────
 
-    suspend fun insertarTransaccion(transaccion: TransaccionEntidad) {
-        transaccionDao.insertarTransaccion(transaccion)
+    // Devuelve el id (Long) que Room generó para la transacción.
+    suspend fun insertarTransaccion(transaccion: TransaccionEntidad): Long {
+        val idGenerado = transaccionDao.insertarTransaccion(transaccion)
         try {
-            SupabaseCliente.cliente.postgrest["transacciones"].upsert(transaccion)
+            // Subimos a Supabase la transacción ya con su id real
+            SupabaseCliente.cliente.postgrest["transacciones"]
+                .upsert(transaccion.copy(idTransaccion = idGenerado.toInt()))
         } catch (e: Exception) {
             Log.e("RepositorioTransaccion", "Error al sincronizar inserción: ${e.message}")
         }
+        return idGenerado
     }
 
     suspend fun actualizarTransaccion(transaccion: TransaccionEntidad) {

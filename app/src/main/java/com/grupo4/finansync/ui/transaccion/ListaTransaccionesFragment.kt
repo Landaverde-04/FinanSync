@@ -36,7 +36,8 @@ class ListaTransaccionesFragment : Fragment() {
             RepositorioUsuario(bd.usuarioDao()),
             RepositorioCategoria(bd.categoriaDao()),
             com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro(bd.planAhorroDao()),
-            com.grupo4.finansync.data.repositorio.RepositorioProgresoAhorro(bd.progresoAhorroDao())
+            com.grupo4.finansync.data.repositorio.RepositorioProgresoAhorro(bd.progresoAhorroDao()),
+            com.grupo4.finansync.data.repositorio.RepositorioComprobante(bd.comprobanteDao())
         )
     }
 

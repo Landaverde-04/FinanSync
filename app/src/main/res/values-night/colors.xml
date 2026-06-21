@@ -2,4 +2,20 @@
 <resources>
     <color name="color_tarjeta">#2C2F3A</color>
     <color name="color_circulo_gris">#3A3D4A</color>
+
+    <!-- Cabecera del monto en modo oscuro: tonos profundos + texto claro -->
+    <color name="cabecera_ingreso">#13352B</color>
+    <color name="cabecera_ingreso_texto">#9FE1CB</color>
+    <color name="cabecera_gasto">#3A1A10</color>
+    <color name="cabecera_gasto_texto">#F0997B</color>
+    <!-- Pestaña activa en oscuro -->
+    <color name="tab_activa_ingreso">#13352B</color>
+    <color name="tab_activa_gasto">#3A1A10</color>
+    <color name="tab_fondo">#22252F</color>
+
+    <!-- Gris de texto secundario: más claro en oscuro para que se lea -->
+    <color name="gris_texto">#9E9E9E</color>
+    <!-- Verde de ingreso un poco más claro sobre fondo oscuro -->
+    <color name="verde_ingreso">#5DCAA5</color>
+    <color name="rojo_gasto">#F0997B</color>
 </resources>
