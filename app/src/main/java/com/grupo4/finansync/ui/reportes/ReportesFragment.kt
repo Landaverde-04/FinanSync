@@ -34,6 +34,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.grupo4.finansync.ui.auth.AuthPrefs
 
 /**
  * Pantalla 3 — Reportes.
@@ -326,7 +327,7 @@ class ReportesFragment : Fragment(), TextToSpeech.OnInitListener {
     private fun leerResumenEnVoz() {
         // Verificar preferencia de accesibilidad del usuario
         val prefs = requireContext().getSharedPreferences(
-            AjustesFragment.PREFS, Context.MODE_PRIVATE
+            AuthPrefs.PREFS, Context.MODE_PRIVATE
         )
         val vozHabilitada = prefs.getBoolean(AjustesFragment.KEY_VOZ, true)
 
