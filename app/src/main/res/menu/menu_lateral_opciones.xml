@@ -21,6 +21,10 @@
             android:id="@+id/nav_perfil"
             android:icon="@android:drawable/button_onoff_indicator_on"
             android:title="Mi Perfil" />
+        <item
+            android:id="@+id/nav_plan_ahorro"
+            android:icon="@android:drawable/button_onoff_indicator_on"
+            android:title="Planes de Ahorro" />
     </group>
 
     <item android:title="Otros Módulos">

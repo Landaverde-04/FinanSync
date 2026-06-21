@@ -22,6 +22,10 @@
         android:title="Categorías y presupuestos" />
 
     <item
+        android:id="@+id/nav_ahorro"
+        android:title="Planes de Ahorro" />
+
+    <item
         android:id="@+id/nav_ajustes"
         android:title="Ajustes" />
 

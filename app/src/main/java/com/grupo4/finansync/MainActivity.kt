@@ -125,6 +125,14 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
 
+                R.id.nav_ahorro -> {
+                    abrirOpcionMenu(
+                        fragment = listaPlanesFragment(),
+                        titulo = "Planes de Ahorro",
+                        idMenu = R.id.nav_ahorro
+                    )
+                }
+
                 R.id.nav_ajustes -> {
                     abrirOpcionMenu(
                         fragment = AjustesFragment(),
