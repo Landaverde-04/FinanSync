@@ -8,6 +8,8 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.modelo.PlanAhorroEntidad
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class PlanesViewModel(private val repositorio: RepositorioPlanAhorro, idUsuario: String) : ViewModel() {
@@ -20,6 +22,22 @@ class PlanesViewModel(private val repositorio: RepositorioPlanAhorro, idUsuario:
             return PlanesViewModel(repositorio, idUsuario) as T
         }
     }
+    private val _mapaProgreso = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    val mapaProgreso: StateFlow<Map<Int, Double>> = _mapaProgreso
+
+    fun cargarProgresos(listaPlanes: List<PlanAhorroEntidad>, daoProgreso: com.grupo4.finansync.bd.dao.ProgresoAhorroDao) {
+        viewModelScope.launch {
+            val mapaTemporal = mutableMapOf<Int, Double>()
+            listaPlanes.forEach { plan ->
+                val monto = daoProgreso.sumarMontoAhorradoPorPlan(plan.idAhorro)
+                mapaTemporal[plan.idAhorro] = monto
+            }
+            _mapaProgreso.value = mapaTemporal
+        }
+    }
+
+
+
     fun eliminarPlan(plan: PlanAhorroEntidad) {
         viewModelScope.launch {
 

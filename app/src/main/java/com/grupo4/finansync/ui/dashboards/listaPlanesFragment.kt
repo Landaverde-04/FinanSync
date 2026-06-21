@@ -1,6 +1,8 @@
 package com.grupo4.finansync.ui.dashboards
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +10,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
@@ -15,13 +18,19 @@ import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.databinding.FragmentListaPlanesBinding
 import com.grupo4.finansync.modelo.PlanAhorroEntidad
-import com.grupo4.finansync.ui.dashboards.crearPlanFragment
+import com.google.android.material.chip.ChipGroup
 import io.github.jan.supabase.gotrue.auth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class listaPlanesFragment : Fragment() {
 
     private var _binding: FragmentListaPlanesBinding? = null
     private val binding get() = _binding!!
+
+    private var textoBusqueda: String = ""
+    private var filtroEstado: String = "Todos" // "Todos", "Activos", "Inactivos", "Completadas"
 
     private val viewModel: PlanesViewModel by viewModels {
         val database = BaseDatos.obtenerInstancia(requireContext())
@@ -40,6 +49,8 @@ class listaPlanesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val database = BaseDatos.obtenerInstancia(requireContext())
+
         binding.btnVolverDeLista.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
@@ -48,14 +59,82 @@ class listaPlanesFragment : Fragment() {
             irA(crearPlanFragment())
         }
 
+        // Escuchar el buscador de texto
+        binding.etBuscarPlan.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                textoBusqueda = s?.toString() ?: ""
+                aplicarFiltrosYActualizar()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        // Escuchar los Chips de filtrado
+        binding.chipGroupFiltros.setOnCheckedChangeListener { _, checkedId ->
+            filtroEstado = when (checkedId) {
+                R.id.chipActivos -> "Activos"
+                R.id.chipInactivos -> "Inactivos"
+                R.id.chipCompletadas -> "Completadas"
+                else -> "Todos"
+            }
+            aplicarFiltrosYActualizar()
+        }
+
         viewModel.planesActivosLiveData.observe(viewLifecycleOwner) { listaPlanes ->
             if (listaPlanes != null) {
-                configurarListaAlcancias(listaPlanes)
+                viewModel.cargarProgresos(listaPlanes, database.progresoAhorroDao())
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.mapaProgreso.collectLatest { _ ->
+                aplicarFiltrosYActualizar()
             }
         }
     }
 
-    private fun configurarListaAlcancias(planes: List<PlanAhorroEntidad>) {
+    override fun onResume() {
+        super.onResume()
+        val database = BaseDatos.obtenerInstancia(requireContext())
+        viewModel.planesActivosLiveData.value?.let {
+            viewModel.cargarProgresos(it, database.progresoAhorroDao())
+        }
+    }
+
+    private fun aplicarFiltrosYActualizar() {
+        val planesOriginales = viewModel.planesActivosLiveData.value ?: emptyList()
+        val progresos = viewModel.mapaProgreso.value
+
+        // 1. Filtrar primero por texto de búsqueda
+        var listaFiltrada = if (textoBusqueda.isEmpty()) {
+            planesOriginales
+        } else {
+            planesOriginales.filter {
+                (it.nombrePlan ?: "").contains(textoBusqueda, ignoreCase = true)
+            }
+        }
+
+        // 2. Filtrar por el Chip de estado seleccionado
+        listaFiltrada = listaFiltrada.filter { plan ->
+            val dineroActual = progresos[plan.idAhorro] ?: 0.0
+            val metaTotal = plan.montoMeta ?: 1.0
+            val metaCompletada = dineroActual >= metaTotal && (plan.montoMeta ?: 0.0) > 0.0
+
+            when (filtroEstado) {
+                "Activos" -> plan.activo && !metaCompletada
+                "Inactivos" -> !plan.activo && !metaCompletada
+                "Completadas" -> metaCompletada
+                else -> true // "Todos"
+            }
+        }
+
+        configurarListaAlcancias(listaFiltrada, progresos)
+    }
+
+    private fun configurarListaAlcancias(planes: List<PlanAhorroEntidad>, progresos: Map<Int, Double>) {
+        val database = BaseDatos.obtenerInstancia(requireContext())
+        val repoPlan = RepositorioPlanAhorro(database.planAhorroDao())
+
         binding.rvPlanesAhorro.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -80,25 +159,41 @@ class listaPlanesFragment : Fragment() {
                 }
                 txtRegla.text = reglaTexto
 
-                if (plan.activo) {
-                    txtEstado.text = "Activo"
-                    txtEstado.setTextColor(resources.getColor(android.R.color.holo_green_dark, null))
-                } else {
-                    txtEstado.text = "Inactivo"
-                    txtEstado.setTextColor(resources.getColor(android.R.color.holo_red_dark, null))
-                }
-
-                val dineroActual = 0.0
+                val dineroActual = progresos[plan.idAhorro] ?: 0.0
                 val metaTotal = plan.montoMeta ?: 1.0
 
-                txtProgresoTexto.text = "$$dineroActual / $$metaTotal"
+                val metaCompletada = dineroActual >= metaTotal && (plan.montoMeta ?: 0.0) > 0.0
+
+                if (metaCompletada) {
+                    txtEstado.text = "¡Meta Completada!"
+                    txtEstado.setTextColor(resources.getColor(android.R.color.holo_green_dark, null))
+                    holder.itemView.setOnClickListener(null)
+                    holder.itemView.alpha = 0.7f
+
+                    if (plan.activo) {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                            val planDesactivado = plan.copy(activo = false)
+                            repoPlan.actualizarPlanAhorro(planDesactivado)
+                        }
+                    }
+                } else {
+                    holder.itemView.alpha = 1.0f
+                    if (plan.activo) {
+                        txtEstado.text = "Activo"
+                        txtEstado.setTextColor(resources.getColor(android.R.color.holo_green_dark, null))
+                    } else {
+                        txtEstado.text = "Inactivo"
+                        txtEstado.setTextColor(resources.getColor(android.R.color.holo_red_dark, null))
+                    }
+                    holder.itemView.setOnClickListener {
+                        mostrarOpcionesDialogo(plan)
+                    }
+                }
+
+                txtProgresoTexto.text = "$%.2f / $%.2f".format(dineroActual, metaTotal)
 
                 val porcentajeCompletado = ((dineroActual / metaTotal) * 100).toInt()
-                progresoBarra.progress = porcentajeCompletado
-
-                holder.itemView.setOnClickListener {
-                    mostrarOpcionesDialogo(plan)
-                }
+                progresoBarra.progress = if (porcentajeCompletado > 100) 100 else porcentajeCompletado
             }
 
             override fun getItemCount(): Int = planes.size
