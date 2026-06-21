@@ -89,25 +89,67 @@ class NuevaTransaccionFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         actualizarTextosFechaHora()
-        savedInstanceState?.getString(ESTADO_TIPO)?.let { tipoActual = it }
+
+        tipoActual = savedInstanceState?.getString(ESTADO_TIPO)
+            ?: arguments?.getString(ARG_TIPO_TRANSACCION)
+                    ?: TIPO_GASTO
+
+        if (tipoActual != TIPO_INGRESO && tipoActual != TIPO_GASTO) {
+            tipoActual = TIPO_GASTO
+        }
+
         pintarPestania(tipoActual)
 
-        binding.tabIngreso.setOnClickListener { seleccionarTipo("ingreso") }
-        binding.tabGasto.setOnClickListener { seleccionarTipo("gasto") }
-        binding.txtFecha.setOnClickListener { abrirSelectorFecha() }
-        binding.txtHora.setOnClickListener { abrirSelectorHora() }
+        binding.tabIngreso.setOnClickListener {
+            seleccionarTipo("ingreso")
+        }
 
-        binding.inputMonto.addTextChangedListener(object : android.text.TextWatcher {
-            override fun afterTextChanged(s: android.text.Editable?) {
-                filasAporte.forEach { fila -> autocompletarFila(fila) }
+        binding.tabGasto.setOnClickListener {
+            seleccionarTipo("gasto")
+        }
+
+        binding.txtFecha.setOnClickListener {
+            abrirSelectorFecha()
+        }
+
+        binding.txtHora.setOnClickListener {
+            abrirSelectorHora()
+        }
+
+        binding.inputMonto.addTextChangedListener(
+            object : android.text.TextWatcher {
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    filasAporte.forEach { fila ->
+                        autocompletarFila(fila)
+                    }
+                }
+
+                override fun beforeTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    count: Int,
+                    after: Int
+                ) {
+                }
+
+                override fun onTextChanged(
+                    s: CharSequence?,
+                    start: Int,
+                    before: Int,
+                    count: Int
+                ) {
+                }
             }
-            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
-        })
+        )
 
         val idUsuario = obtenerIdUsuarioActual()
+
         if (idUsuario != null) {
-            viewModel.cargarCategoriasPorTipo(idUsuario, tipoActual)
+            viewModel.cargarCategoriasPorTipo(
+                idUsuario,
+                tipoActual
+            )
+
             viewModel.cargarPlanesActivos(idUsuario)
         }
 
@@ -118,7 +160,9 @@ class NuevaTransaccionFragment : Fragment() {
         configurarCalculadora()
         pedirUbicacion()
 
-        binding.btnGuardar.setOnClickListener { guardarTransaccion() }
+        binding.btnGuardar.setOnClickListener {
+            guardarTransaccion()
+        }
     }
 
     private fun configurarCalculadora() {
@@ -588,5 +632,9 @@ class NuevaTransaccionFragment : Fragment() {
 
     companion object {
         private const val ESTADO_TIPO = "tipo_actual"
+
+        const val ARG_TIPO_TRANSACCION = "tipo_transaccion"
+        const val TIPO_INGRESO = "ingreso"
+        const val TIPO_GASTO = "gasto"
     }
 }

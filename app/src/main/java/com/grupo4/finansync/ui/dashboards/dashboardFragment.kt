@@ -24,6 +24,7 @@ import com.grupo4.finansync.data.repositorio.RepositorioCategoria
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentDashboardBinding
+import com.grupo4.finansync.ui.transaccion.NuevaTransaccionFragment
 import com.grupo4.finansync.ui.transaccion.TransaccionAdapter
 import java.util.Locale
 
@@ -35,47 +36,100 @@ class dashboardFragment : Fragment() {
     private val viewModel: DashboardViewModel by viewModels {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            override fun <T : ViewModel> create(
+                modelClass: Class<T>
+            ): T {
                 val database = BaseDatos.obtenerInstancia(requireContext())
-                val repoPlanes = RepositorioPlanAhorro(database.planAhorroDao())
-                val repoTransacciones = RepositorioTransaccion(database.transaccionDao())
-                val repoCategorias = RepositorioCategoria(database.categoriaDao())
-                return DashboardViewModel(repoPlanes, repoTransacciones, repoCategorias) as T
+
+                val repoPlanes = RepositorioPlanAhorro(
+                    database.planAhorroDao()
+                )
+
+                val repoTransacciones = RepositorioTransaccion(
+                    database.transaccionDao()
+                )
+
+                val repoCategorias = RepositorioCategoria(
+                    database.categoriaDao()
+                )
+
+                return DashboardViewModel(
+                    repoPlanes,
+                    repoTransacciones,
+                    repoCategorias
+                ) as T
             }
         }
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentDashboardBinding.inflate(
+            inflater,
+            container,
+            false
+        )
+
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.btnVerReportesDetallados.setOnClickListener {
             irA(fragmentGraficosReportes())
         }
 
-        binding.fabCrearPlan.setOnClickListener {
-            irA(listaPlanesFragment())
+        binding.btnIngresoRapido.setOnClickListener {
+            irATransaccion(
+                NuevaTransaccionFragment.TIPO_INGRESO
+            )
+        }
+
+        binding.btnGastoRapido.setOnClickListener {
+            irATransaccion(
+                NuevaTransaccionFragment.TIPO_GASTO
+            )
         }
 
         viewModel.balanceDisponibleReal.observe(viewLifecycleOwner) { balance ->
-            binding.txtBalanceDisponible.text = String.format(Locale.US, "$%.2f", balance ?: 0.0)
+            binding.txtBalanceDisponible.text =
+                String.format(
+                    Locale.US,
+                    "$%.2f",
+                    balance ?: 0.0
+                )
         }
 
         viewModel.totalIngresosLiveData.observe(viewLifecycleOwner) { ingresos ->
             val ing = (ingresos ?: 0.0).toFloat()
-            binding.txtIngresosMensuales.text = String.format(Locale.US, "$%.2f", ing)
+
+            binding.txtIngresosMensuales.text =
+                String.format(
+                    Locale.US,
+                    "$%.2f",
+                    ing
+                )
+
             actualizarGraficas()
         }
 
         viewModel.totalGastosLiveData.observe(viewLifecycleOwner) { gastos ->
             val gas = (gastos ?: 0.0).toFloat()
-            binding.txtGastosMensuales.text = String.format(Locale.US, "$%.2f", gas)
+
+            binding.txtGastosMensuales.text =
+                String.format(
+                    Locale.US,
+                    "$%.2f",
+                    gas
+                )
+
             actualizarGraficas()
         }
 
@@ -87,45 +141,92 @@ class dashboardFragment : Fragment() {
         }
     }
 
-    private fun irA(fragment: Fragment) {
+    private fun irATransaccion(
+        tipo: String
+    ) {
+        val fragment = NuevaTransaccionFragment().apply {
+            arguments = Bundle().apply {
+                putString(
+                    NuevaTransaccionFragment.ARG_TIPO_TRANSACCION,
+                    tipo
+                )
+            }
+        }
+
+        irA(fragment)
+    }
+
+    private fun irA(
+        fragment: Fragment
+    ) {
         parentFragmentManager.beginTransaction()
-            .replace(R.id.contenedorFragment, fragment)
+            .replace(
+                R.id.contenedorFragment,
+                fragment
+            )
             .addToBackStack(null)
             .commit()
     }
 
     private fun actualizarGraficas() {
-        val ingresos = viewModel.totalIngresosLiveData.value?.toFloat() ?: 0f
-        val gastos = viewModel.totalGastosLiveData.value?.toFloat() ?: 0f
+        val ingresos =
+            viewModel.totalIngresosLiveData.value?.toFloat() ?: 0f
 
-        val colorTextoTema = if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
-            Color.WHITE
-        } else {
-            Color.parseColor("#64748B")
-        }
+        val gastos =
+            viewModel.totalGastosLiveData.value?.toFloat() ?: 0f
 
-        val entradaIngreso = BarEntry(1f, ingresos)
-        val entradaGasto = BarEntry(2f, gastos)
+        val colorTextoTema =
+            if (
+                AppCompatDelegate.getDefaultNightMode() ==
+                AppCompatDelegate.MODE_NIGHT_YES
+            ) {
+                Color.WHITE
+            } else {
+                Color.parseColor("#64748B")
+            }
 
-        val dsIngresos = BarDataSet(listOf(entradaIngreso), "Ingresos").apply {
+        val entradaIngreso = BarEntry(
+            1f,
+            ingresos
+        )
+
+        val entradaGasto = BarEntry(
+            2f,
+            gastos
+        )
+
+        val dsIngresos = BarDataSet(
+            listOf(entradaIngreso),
+            "Ingresos"
+        ).apply {
             color = Color.parseColor("#16A34A")
             setDrawValues(false)
         }
-        val dsGastos = BarDataSet(listOf(entradaGasto), "Gastos").apply {
+
+        val dsGastos = BarDataSet(
+            listOf(entradaGasto),
+            "Gastos"
+        ).apply {
             color = Color.parseColor("#DC2626")
             setDrawValues(false)
         }
 
         binding.barChartDashboard.apply {
-            data = BarData(dsIngresos, dsGastos)
+            data = BarData(
+                dsIngresos,
+                dsGastos
+            )
+
             description.isEnabled = false
             legend.isEnabled = false
             xAxis.isEnabled = false
+
             axisLeft.apply {
                 axisMinimum = 0f
                 textColor = colorTextoTema
                 setDrawGridLines(true)
             }
+
             axisRight.isEnabled = false
             invalidate()
         }
@@ -134,27 +235,64 @@ class dashboardFragment : Fragment() {
         val listaColores = mutableListOf<Int>()
 
         if (ingresos == 0f && gastos == 0f) {
-            pieEntries.add(PieEntry(1f, "Sin Movimientos"))
-            listaColores.add(Color.parseColor("#E2E8F0"))
+            pieEntries.add(
+                PieEntry(
+                    1f,
+                    "Sin Movimientos"
+                )
+            )
+
+            listaColores.add(
+                Color.parseColor("#E2E8F0")
+            )
         } else {
             if (ingresos > 0f) {
-                pieEntries.add(PieEntry(ingresos, "Ingresos"))
-                listaColores.add(Color.parseColor("#16A34A"))
+                pieEntries.add(
+                    PieEntry(
+                        ingresos,
+                        "Ingresos"
+                    )
+                )
+
+                listaColores.add(
+                    Color.parseColor("#16A34A")
+                )
             }
+
             if (gastos > 0f) {
-                pieEntries.add(PieEntry(gastos, "Gastos"))
-                listaColores.add(Color.parseColor("#DC2626"))
+                pieEntries.add(
+                    PieEntry(
+                        gastos,
+                        "Gastos"
+                    )
+                )
+
+                listaColores.add(
+                    Color.parseColor("#DC2626")
+                )
             }
         }
 
-        val pieDataSet = PieDataSet(pieEntries, "").apply {
+        val pieDataSet = PieDataSet(
+            pieEntries,
+            ""
+        ).apply {
             colors = listaColores
             valueTextSize = 11f
             valueTextColor = Color.WHITE
-            setDrawValues(ingresos > 0f || gastos > 0f)
+            setDrawValues(
+                ingresos > 0f || gastos > 0f
+            )
+
             valueFormatter = object : ValueFormatter() {
-                override fun getFormattedValue(value: Float): String {
-                    return String.format(Locale.US, "$%.0f", value)
+                override fun getFormattedValue(
+                    value: Float
+                ): String {
+                    return String.format(
+                        Locale.US,
+                        "$%.0f",
+                        value
+                    )
                 }
             }
         }
@@ -166,19 +304,27 @@ class dashboardFragment : Fragment() {
             holeRadius = 45f
             transparentCircleRadius = 50f
             setDrawEntryLabels(false)
-
-            setExtraOffsets(2f, 2f, 2f, 2f)
+            setExtraOffsets(
+                2f,
+                2f,
+                2f,
+                2f
+            )
 
             legend.apply {
                 isEnabled = true
-                verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-                horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
-                orientation = Legend.LegendOrientation.HORIZONTAL
+                verticalAlignment =
+                    Legend.LegendVerticalAlignment.BOTTOM
+                horizontalAlignment =
+                    Legend.LegendHorizontalAlignment.CENTER
+                orientation =
+                    Legend.LegendOrientation.HORIZONTAL
                 setDrawInside(false)
                 textSize = 9f
                 textColor = colorTextoTema
                 isWordWrapEnabled = true
             }
+
             invalidate()
         }
     }

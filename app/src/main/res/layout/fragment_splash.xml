@@ -3,42 +3,123 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#0F172A">
 
-    <TextView
-        android:id="@+id/tv_logo"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/contenedor_splash"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="💰 FinanSync"
-        android:textSize="34sp"
-        android:textStyle="bold"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingHorizontal="32dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tv_tagline"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintVertical_chainStyle="packed"
-        app:layout_constraintVertical_bias="0.38"/>
+        app:layout_constraintVertical_bias="0.42">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1E293B"
+            app:strokeColor="#334155"
+            app:strokeWidth="1dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="💰"
+                android:textSize="40sp" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/tv_logo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="FinanSync"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-black"
+            android:layout_marginTop="22dp" />
+
+        <TextView
+            android:id="@+id/tv_tagline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tus finanzas claras, simples y seguras"
+            android:textColor="#CBD5E1"
+            android:textSize="15sp"
+            android:gravity="center"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="22dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="Ingresos"
+                android:textColor="#86EFAC"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="#163522" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:layout_marginStart="8dp"
+                android:text="Gastos"
+                android:textColor="#FCA5A5"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="#3F1D1D" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:layout_marginStart="8dp"
+                android:text="Metas"
+                android:textColor="#BFDBFE"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:background="#1E3A5F" />
+
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progress_splash"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginTop="42dp"
+            android:indeterminateTint="#60A5FA" />
+
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/tv_tagline"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="tus finanzas claras"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_logo"
-        app:layout_constraintBottom_toTopOf="@id/progress_splash"
+        android:text="Control personal de ingresos, gastos y ahorro"
+        android:textColor="#64748B"
+        android:textSize="12sp"
+        android:layout_marginBottom="32dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <ProgressBar
-        android:id="@+id/progress_splash"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_tagline"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
