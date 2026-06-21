@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
     <!-- ══════════ PESTAÑAS: Ingreso / Gasto ══════════ -->
@@ -72,6 +73,14 @@
                 android:background="@android:color/transparent" />
         </LinearLayout>
     </LinearLayout>
+
+    <!-- ScrollView: permite desplazar el formulario cuando crece o aparece el teclado.
+         weight=1 hace que ocupe el espacio entre las pestañas (arriba) y la barra de cámara (abajo). -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
 
     <!-- ══════════ TARJETA DEL FORMULARIO ══════════ -->
     <LinearLayout
@@ -166,6 +175,68 @@
                 android:inputType="text"
                 android:paddingVertical="8dp" />
 
+            <!-- ══════════ AHORRO (solo visible en INGRESO) ══════════ -->
+            <LinearLayout
+                android:id="@+id/seccionAhorro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:paddingTop="8dp">
+
+                <!-- Separador visual -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="8dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <!-- Checkbox para activar el ahorro -->
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/checkAhorro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Destinar parte a un plan de ahorro" />
+
+                <!-- Detalle del ahorro: se muestra al marcar el checkbox -->
+                <LinearLayout
+                    android:id="@+id/detalleAhorro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:paddingStart="8dp"
+                    android:paddingTop="4dp">
+
+                    <!-- Contenedor donde se agregan las filas de aporte (una por plan) -->
+                    <LinearLayout
+                        android:id="@+id/contenedorAportes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <!-- Botón para añadir otra fila de plan -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAgregarPlan"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="➕ Agregar otro plan"
+                        android:textSize="13sp"
+                        android:layout_marginTop="8dp" />
+
+                    <!-- Total que se está destinando a ahorro -->
+                    <TextView
+                        android:id="@+id/txtTotalAhorro"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <!-- ── Fecha / Hora + botón Guardar ── -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -205,6 +276,7 @@
                     app:cornerRadius="12dp" />
             </LinearLayout>
     </LinearLayout>
+    </ScrollView>
 
     <!-- ══════════ BARRA INFERIOR: galería / cámara ══════════ -->
     <LinearLayout

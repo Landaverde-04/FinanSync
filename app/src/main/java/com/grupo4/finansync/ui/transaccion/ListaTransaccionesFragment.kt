@@ -31,10 +31,13 @@ class ListaTransaccionesFragment : Fragment() {
 
     private val viewModel: TransaccionViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext())
-        val repoTransaccion = RepositorioTransaccion(bd.transaccionDao())
-        val repoUsuario = RepositorioUsuario(bd.usuarioDao())
-        val repoCategoria = RepositorioCategoria(bd.categoriaDao())
-        TransaccionViewModel.Factory(repoTransaccion, repoUsuario, repoCategoria)
+        TransaccionViewModel.Factory(
+            RepositorioTransaccion(bd.transaccionDao()),
+            RepositorioUsuario(bd.usuarioDao()),
+            RepositorioCategoria(bd.categoriaDao()),
+            com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro(bd.planAhorroDao()),
+            com.grupo4.finansync.data.repositorio.RepositorioProgresoAhorro(bd.progresoAhorroDao())
+        )
     }
 
     override fun onCreateView(
