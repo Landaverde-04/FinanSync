@@ -1,60 +1,77 @@
 package com.grupo4.finansync
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.lifecycleScope
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.sync.SyncManager
+import com.grupo4.finansync.ui.ajustes.AjustesFragment
+import com.grupo4.finansync.ui.auth.AuthPrefs
 import com.grupo4.finansync.ui.menu.MenuFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.content.Context
-import androidx.appcompat.app.AppCompatDelegate
-import com.grupo4.finansync.ui.ajustes.AjustesFragment
 
 /**
- * Pantalla principal (temporal).
- * Arranca mostrando el MENÚ del módulo, desde donde se navega a las pantallas.
- * Cuando M2 monte el Navigation Component, esta Activity hospedará el grafo de navegación.
+ * Pantalla principal.
+ * Arranca mostrando el menú del módulo.
  */
 class MainActivity : AppCompatActivity() {
 
-    // Usuario de prueba (mock). Vendrá de la sesión real de Supabase Auth (M2).
+    // Usuario de prueba temporal.
+    // Luego se debe reemplazar por el usuario real de Supabase Auth.
     private val idUsuarioMock = "usuario-prueba-001"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // ── Aplicar tema ANTES de setContentView ──────────────────────────
-        // Si se hace después, la Activity ya se dibujó con el tema anterior
-        val prefs = getSharedPreferences(AjustesFragment.PREFS, Context.MODE_PRIVATE)
-        val modoOscuro = prefs.getBoolean(AjustesFragment.KEY_MODO_OSCURO, false)
+        val prefs = getSharedPreferences(
+            AuthPrefs.PREFS,
+            Context.MODE_PRIVATE
+        )
+
+        val modoOscuro = prefs.getBoolean(
+            AjustesFragment.KEY_MODO_OSCURO,
+            false
+        )
+
         AppCompatDelegate.setDefaultNightMode(
-            if (modoOscuro) AppCompatDelegate.MODE_NIGHT_YES
-            else AppCompatDelegate.MODE_NIGHT_NO
+            if (modoOscuro) {
+                AppCompatDelegate.MODE_NIGHT_YES
+            } else {
+                AppCompatDelegate.MODE_NIGHT_NO
+            }
         )
         // ─────────────────────────────────────────────────────────────────
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Cargamos el menú dentro del contenedor, solo la primera vez
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.contenedorFragment, MenuFragment())
+                .replace(
+                    R.id.contenedorFragment,
+                    MenuFragment()
+                )
                 .commit()
         }
 
-        // Sincronizar de la nube al abrir la app (en segundo plano).
-        // Trae a Room lo que esté en Supabase. Si no hay red, simplemente no hace nada.
         sincronizarDesdeLaNube()
     }
 
     private fun sincronizarDesdeLaNube() {
-        // Dispatchers.IO = hilo de fondo para operaciones de red/BD, no bloquea la pantalla
         lifecycleScope.launch(Dispatchers.IO) {
             val bd = BaseDatos.obtenerInstancia(applicationContext)
+
             val syncManager = SyncManager(bd)
+
             val ok = syncManager.sincronizarTodo(idUsuarioMock)
-            Log.d("MainActivity", "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}")
+
+            Log.d(
+                "MainActivity",
+                "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}"
+            )
         }
     }
 }
