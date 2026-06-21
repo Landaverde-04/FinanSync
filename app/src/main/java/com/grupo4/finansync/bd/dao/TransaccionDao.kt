@@ -18,8 +18,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TransaccionDao {
 
+    // Devuelve el id (rowId) generado por Room para la transacción insertada.
+    // Necesario para ligar un comprobante a la transacción recién creada.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarTransaccion(transaccion: TransaccionEntidad)
+    suspend fun insertarTransaccion(transaccion: TransaccionEntidad): Long
 
     @Update
     suspend fun actualizarTransaccion(transaccion: TransaccionEntidad)

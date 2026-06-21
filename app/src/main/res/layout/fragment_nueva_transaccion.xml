@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Raíz vertical: cabecera de pestañas arriba, formulario en medio, barra de acciones abajo -->
+<!-- Pantalla de Nueva Transacción (rediseñada). Preparada para modo oscuro. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/raiz"
@@ -9,21 +9,22 @@
     android:fitsSystemWindows="true"
     android:background="?attr/colorSurface">
 
-    <!-- ══════════ PESTAÑAS: Ingreso / Gasto ══════════ -->
+    <!-- ══════════ PESTAÑAS tipo segmento: Ingreso / Gasto ══════════ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:paddingVertical="14dp">
+        android:layout_margin="16dp"
+        android:padding="6dp"
+        android:background="@drawable/fondo_tarjeta">
 
-        <!-- Pestaña INGRESO -->
         <LinearLayout
             android:id="@+id/tabIngreso"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
             android:gravity="center"
+            android:padding="12dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -32,27 +33,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="➕  Ingreso"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:textColor="@color/verde_ingreso" />
-
-            <!-- Subrayado de la pestaña activa -->
-            <View
-                android:id="@+id/indicadorIngreso"
-                android:layout_width="80dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="8dp"
-                android:background="@color/verde_ingreso" />
         </LinearLayout>
 
-        <!-- Pestaña GASTO -->
         <LinearLayout
             android:id="@+id/tabGasto"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
             android:gravity="center"
+            android:padding="12dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -61,221 +53,277 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="➖  Gasto"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold"
                 android:textColor="@color/gris_texto" />
-
-            <View
-                android:id="@+id/indicadorGasto"
-                android:layout_width="80dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="8dp"
-                android:background="@android:color/transparent" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ScrollView: permite desplazar el formulario cuando crece o aparece el teclado.
-         weight=1 hace que ocupe el espacio entre las pestañas (arriba) y la barra de cámara (abajo). -->
+    <!-- Indicadores ocultos (el Fragment los referencia; ya no se usan visualmente
+         porque ahora la pestaña activa se resalta con fondo). Se mantienen para no romper el código. -->
+    <View
+        android:id="@+id/indicadorIngreso"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+    <View
+        android:id="@+id/indicadorGasto"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true">
 
-    <!-- ══════════ TARJETA DEL FORMULARIO ══════════ -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_margin="12dp"
-        android:padding="20dp"
-        android:background="@drawable/fondo_tarjeta">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/fondo_tarjeta">
 
-            <!-- ── Fila del MONTO grande + calculadora ── -->
+            <!-- ── CABECERA DEL MONTO (con fondo de color) ── -->
             <LinearLayout
+                android:id="@+id/cabeceraMonto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingBottom="12dp">
+                android:padding="20dp"
+                android:background="@drawable/fondo_cabecera_monto">
 
-                <!-- Ícono circular del tipo (cambia de color según ingreso/gasto) -->
                 <TextView
                     android:id="@+id/iconoTipo"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="46dp"
+                    android:layout_height="46dp"
                     android:gravity="center"
                     android:text="➕"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textColor="@color/white"
                     android:background="@drawable/circulo_tipo" />
 
-                <!-- Monto grande, alineado a la derecha -->
-                <EditText
-                    android:id="@+id/inputMonto"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:gravity="end"
-                    android:hint="0"
-                    android:text=""
-                    android:textSize="40sp"
-                    android:textStyle="bold"
-                    android:inputType="numberDecimal"
-                    android:background="@android:color/transparent"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="8dp" />
+                    android:orientation="vertical"
+                    android:layout_marginStart="14dp">
 
-                <!-- Botón calculadora (lo conectamos en el paso de la calculadora) -->
+                    <TextView
+                        android:id="@+id/lblMonto"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MONTO"
+                        android:textSize="11sp"
+                        android:letterSpacing="0.08"
+                        android:textColor="@color/cabecera_ingreso_texto" />
+
+                    <EditText
+                        android:id="@+id/inputMonto"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="0"
+                        android:textColorHint="@color/gris_texto"
+                        android:textColor="@color/cabecera_ingreso_texto"
+                        android:textSize="34sp"
+                        android:textStyle="bold"
+                        android:inputType="numberDecimal"
+                        android:background="@android:color/transparent" />
+                </LinearLayout>
+
                 <ImageView
                     android:id="@+id/btnCalculadora"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:src="@android:drawable/ic_menu_edit"
-                    android:contentDescription="Calculadora" />
+                    android:contentDescription="Calculadora"
+                    app:tint="@color/cabecera_ingreso_texto" />
             </LinearLayout>
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="?attr/colorOutlineVariant" />
-
-            <!-- ── Categoría ── -->
+            <!-- ── Contenido del formulario ── -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="16dp">
-
-                <TextView
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:gravity="center"
-                    android:text="❓"
-                    android:textSize="16sp"
-                    android:background="@drawable/circulo_gris" />
-
-                <!-- Spinner de categorías (lo llenará M3; por ahora con la categoría mock) -->
-                <Spinner
-                    android:id="@+id/spinnerCategoria"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="12dp" />
-            </LinearLayout>
-
-            <!-- ── Descripción ── -->
-            <EditText
-                android:id="@+id/inputDescripcion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Escriba una descripción breve"
-                android:textColorHint="@color/gris_texto"
-                android:inputType="text"
-                android:paddingVertical="8dp" />
-
-            <!-- ══════════ AHORRO (solo visible en INGRESO) ══════════ -->
-            <LinearLayout
-                android:id="@+id/seccionAhorro"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:visibility="gone"
-                android:paddingTop="8dp">
+                android:padding="20dp">
 
-                <!-- Separador visual -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginVertical="8dp"
-                    android:background="?attr/colorOutlineVariant" />
+                <!-- CATEGORÍA -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CATEGORÍA"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08"
+                    android:textColor="@color/gris_texto" />
 
-                <!-- Checkbox para activar el ahorro -->
-                <com.google.android.material.checkbox.MaterialCheckBox
-                    android:id="@+id/checkAhorro"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Destinar parte a un plan de ahorro" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="6dp"
+                    android:layout_marginBottom="12dp">
 
-                <!-- Detalle del ahorro: se muestra al marcar el checkbox -->
+                    <TextView
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="❓"
+                        android:textSize="16sp"
+                        android:background="@drawable/circulo_gris" />
+
+                    <Spinner
+                        android:id="@+id/spinnerCategoria"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="12dp" />
+                </LinearLayout>
+
+                <!-- DESCRIPCIÓN -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DESCRIPCIÓN"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08"
+                    android:textColor="@color/gris_texto" />
+
+                <EditText
+                    android:id="@+id/inputDescripcion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Escribe una nota…"
+                    android:textColorHint="@color/gris_texto"
+                    android:inputType="text"
+                    android:paddingVertical="8dp"
+                    android:layout_marginBottom="14dp" />
+
+                <!-- UBICACIÓN -->
                 <LinearLayout
-                    android:id="@+id/detalleAhorro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="12dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/fondo_tarjeta">
+
+                    <TextView
+                        android:id="@+id/txtUbicacion"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="📍 Obteniendo ubicación…"
+                        android:textSize="14sp"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchUbicacion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
+                </LinearLayout>
+
+                <!-- ══════════ AHORRO (solo visible en INGRESO) ══════════ -->
+                <LinearLayout
+                    android:id="@+id/seccionAhorro"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:visibility="gone"
-                    android:paddingStart="8dp"
-                    android:paddingTop="4dp">
+                    android:visibility="gone">
 
-                    <!-- Contenedor donde se agregan las filas de aporte (una por plan) -->
-                    <LinearLayout
-                        android:id="@+id/contenedorAportes"
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <com.google.android.material.checkbox.MaterialCheckBox
+                        android:id="@+id/checkAhorro"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical" />
+                        android:text="Destinar parte a un plan de ahorro" />
 
-                    <!-- Botón para añadir otra fila de plan -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnAgregarPlan"
-                        style="?attr/materialButtonOutlinedStyle"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:id="@+id/detalleAhorro"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="➕ Agregar otro plan"
-                        android:textSize="13sp"
-                        android:layout_marginTop="8dp" />
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        android:paddingStart="8dp"
+                        android:paddingTop="4dp">
 
-                    <!-- Total que se está destinando a ahorro -->
-                    <TextView
-                        android:id="@+id/txtTotalAhorro"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text=""
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
+                        <LinearLayout
+                            android:id="@+id/contenedorAportes"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAgregarPlan"
+                            style="?attr/materialButtonOutlinedStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="➕ Agregar otro plan"
+                            android:textSize="13sp"
+                            android:layout_marginTop="8dp" />
+
+                        <TextView
+                            android:id="@+id/txtTotalAhorro"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=""
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
 
-            <!-- ── Fecha / Hora + botón Guardar ── -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingTop="12dp">
-
+                <!-- ── Fecha / Hora (chips centrados) ── -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:paddingTop="20dp">
 
                     <TextView
                         android:id="@+id/txtFecha"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="14/Jun/2026"
-                        android:textSize="16sp" />
+                        android:text="📅 14/Jun"
+                        android:textSize="14sp"
+                        android:padding="10dp"
+                        android:background="@drawable/fondo_tarjeta"
+                        android:layout_marginEnd="10dp" />
 
                     <TextView
                         android:id="@+id/txtHora"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="02:59 pm"
-                        android:textSize="16sp"
-                        android:layout_marginTop="6dp" />
+                        android:text="🕐 02:59"
+                        android:textSize="14sp"
+                        android:padding="10dp"
+                        android:background="@drawable/fondo_tarjeta" />
                 </LinearLayout>
 
+                <!-- ── Botón Guardar (ancho completo, debajo) ── -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnGuardar"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Guardar"
-                    android:paddingHorizontal="28dp"
+                    android:textSize="16sp"
+                    android:paddingVertical="14dp"
+                    android:layout_marginTop="20dp"
                     app:cornerRadius="12dp" />
             </LinearLayout>
-    </LinearLayout>
+        </LinearLayout>
     </ScrollView>
 
     <!-- ══════════ BARRA INFERIOR: galería / cámara ══════════ -->
@@ -284,7 +332,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:paddingVertical="12dp">
+        android:paddingVertical="12dp"
+        android:background="?attr/colorSurface">
 
         <ImageView
             android:id="@+id/btnGaleria"
@@ -292,14 +341,16 @@
             android:layout_height="40dp"
             android:src="@android:drawable/ic_menu_gallery"
             android:contentDescription="Galería"
-            android:layout_marginEnd="40dp" />
+            app:tint="@color/gris_texto"
+            android:layout_marginEnd="48dp" />
 
         <ImageView
             android:id="@+id/btnCamara"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:src="@android:drawable/ic_menu_camera"
-            android:contentDescription="Cámara" />
+            android:contentDescription="Cámara"
+            app:tint="@color/gris_texto" />
     </LinearLayout>
 
 </LinearLayout>

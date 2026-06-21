@@ -58,4 +58,14 @@
     <color name="color_tarjeta">#FFFFFF</color>
     <!-- Círculo de categoría: gris claro en claro, gris oscuro en dark -->
     <color name="color_circulo_gris">#E0E0E0</color>
+
+    <!-- Cabecera del monto: fondos suaves + texto oscuro (modo claro) -->
+    <color name="cabecera_ingreso">#E1F5EE</color>
+    <color name="cabecera_ingreso_texto">#04342C</color>
+    <color name="cabecera_gasto">#FAECE7</color>
+    <color name="cabecera_gasto_texto">#4A1B0C</color>
+    <!-- Fondo de la pestaña activa (segmento) -->
+    <color name="tab_activa_ingreso">#E1F5EE</color>
+    <color name="tab_activa_gasto">#FAECE7</color>
+    <color name="tab_fondo">#F1EFE8</color>
 </resources>
