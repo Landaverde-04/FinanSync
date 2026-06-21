@@ -301,38 +301,28 @@ class MainActivity : AppCompatActivity() {
     private fun sincronizarDesdeLaNube() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val idUsuario =
-                    SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-
+                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
                 if (idUsuario == null) {
-                    Log.w(
-                        "MainActivity",
-                        "No hay usuario autenticado para sincronizar"
-                    )
+                    Log.d("MainActivity", "Sin sesión activa, omitiendo sincronización")
                     return@launch
                 }
 
-                Log.d(
-                    "MainActivity",
-                    "Iniciando sincronización para el usuario: $idUsuario"
-                )
+                // Evitar sincronizar de nuevo si AuthActivity ya lo hizo hace poco
+                val prefs = getSharedPreferences("sync_prefs", Context.MODE_PRIVATE)
+                val ultimaSync = prefs.getLong("ultima_sync_$idUsuario", 0L)
+                val ahora = System.currentTimeMillis()
+
+                if (ahora - ultimaSync < 10_000L) {
+                    Log.d("MainActivity", "Sincronización reciente, se omite duplicado")
+                    return@launch
+                }
 
                 val bd = BaseDatos.obtenerInstancia(applicationContext)
-
-                val syncManager = SyncManager(bd)
-
-                val ok = syncManager.sincronizarTodo(idUsuario)
-
-                Log.d(
-                    "MainActivity",
-                    "Sincronización inicial: ${if (ok) "OK" else "sin conexión / falló"}"
-                )
-
+                val ok = SyncManager(bd).sincronizarTodo(idUsuario)
+                prefs.edit().putLong("ultima_sync_$idUsuario", ahora).apply()
+                Log.d("MainActivity", "Sincronización: ${if (ok) "OK" else "falló"}")
             } catch (e: Exception) {
-                Log.e(
-                    "MainActivity",
-                    "Error al sincronizar: ${e.message}"
-                )
+                Log.e("MainActivity", "Error al sincronizar: ${e.message}")
             }
         }
     }

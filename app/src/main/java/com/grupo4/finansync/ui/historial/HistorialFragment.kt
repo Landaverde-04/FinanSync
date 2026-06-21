@@ -56,13 +56,18 @@ class HistorialFragment : Fragment() {
         configurarChips()
         configurarBusqueda()
         observarViewModel()
-        observarConectividad() //llama a la sincronizacion por internet
+        observarConectividad()
         binding.btnReportesHistorial.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.contenedorFragment, ReportesFragment())
                 .addToBackStack(null)
                 .commit()
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun observarConectividad() {
@@ -79,16 +84,10 @@ class HistorialFragment : Fragment() {
         connectivityManager.registerDefaultNetworkCallback(callback)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
     // ── Configuración ──────────────────────────────────────────────────────
     private fun configurarRecyclerView() {
         adapter = TransaccionDiffAdapter(
             onItemClick = { transaccion ->
-                // Navega al detalle pasando el ID de la transacción
                 val detalle = DetalleTransaccionFragment.newInstance(transaccion.idTransaccion)
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.contenedorFragment, detalle)
@@ -131,14 +130,25 @@ class HistorialFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                // Lista de transacciones filtradas → RecyclerView
+                // Estado de carga + lista de transacciones COMBINADOS en un solo launch.
+                // Esto evita que el "Sin movimientos aún" se quede pegado por una
+                // condición de carrera entre dos Flows independientes.
                 launch {
-                    vm.transaccionesFiltradas.collect { lista ->
-                        binding.layoutVacio.visibility =
-                            if (lista.isEmpty()) View.VISIBLE else View.GONE
-                        binding.rvHistorial.visibility =
-                            if (lista.isEmpty()) View.GONE else View.VISIBLE
-                        adapter.submitTransacciones(lista)
+                    vm.cargandoSesion.collect { cargando ->
+                        if (cargando) {
+                            // Mientras se resuelve la sesión, no mostramos ningún estado
+                            binding.layoutVacio.visibility = View.GONE
+                            binding.rvHistorial.visibility = View.GONE
+                        } else {
+                            // Sesión ya resuelta: ahora sí escuchamos la lista real
+                            vm.transaccionesFiltradas.collect { lista ->
+                                binding.layoutVacio.visibility =
+                                    if (lista.isEmpty()) View.VISIBLE else View.GONE
+                                binding.rvHistorial.visibility =
+                                    if (lista.isEmpty()) View.GONE else View.VISIBLE
+                                adapter.submitTransacciones(lista)
+                            }
+                        }
                     }
                 }
 
@@ -168,6 +178,7 @@ class HistorialFragment : Fragment() {
                         )
                     }
                 }
+
                 // Mensaje de sincronización pendiente
                 launch {
                     vm.mensajeSincronizacion.collect { mensaje ->

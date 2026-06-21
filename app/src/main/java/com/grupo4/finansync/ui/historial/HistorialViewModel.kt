@@ -26,23 +26,31 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
 
     // Emite "" al inicio; se actualiza cuando Supabase restaura la sesión
     private val _idUsuario = MutableStateFlow("")
-    //
+
+    // Estado de carga de sesión (true mientras no se ha resuelto el ID de usuario)
+    val cargandoSesion: StateFlow<Boolean> =
+        _idUsuario.map { it.isEmpty() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
     private val _mensajeSincronizacion = MutableStateFlow<String?>(null)
     val mensajeSincronizacion: StateFlow<String?> = _mensajeSincronizacion.asStateFlow()
 
     fun limpiarMensajeSincronizacion() { _mensajeSincronizacion.value = null }
 
     init {
-        // Supabase puede tardar unos instantes en restaurar la sesión en memoria.
-        // Reintentamos hasta 10 veces con 500ms de espera entre cada intento.
         viewModelScope.launch(Dispatchers.IO) {
-            repeat(10) { intento ->
+            repeat(20) { intento ->
                 val id = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+                android.util.Log.d("HistorialDebug", "Intento $intento, id=$id")
                 if (!id.isNullOrEmpty()) {
                     _idUsuario.value = id
+                    android.util.Log.d("HistorialDebug", "ID asignado: $id")
+                    // Verificar inmediatamente cuántas transacciones hay en Room
+                    val cuenta = transaccionDao.obtenerTransaccionesPorUsuario(id).first().size
+                    android.util.Log.d("HistorialDebug", "Room tiene $cuenta transacciones para este usuario")
                     return@launch
                 }
-                delay(500L)
+                delay(100L)
             }
         }
     }
@@ -73,7 +81,6 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 }
 
-                // Avisar al usuario solo si se subió algo
                 if (subidasExitosas > 0) {
                     _mensajeSincronizacion.value =
                         "✅ $subidasExitosas transacción(es) pendientes sincronizada(s) exitosamente"
@@ -89,7 +96,6 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
             val prefs = getApplication<android.app.Application>()
                 .getSharedPreferences("eliminaciones_pendientes", android.content.Context.MODE_PRIVATE)
             val pendientes = prefs.all
-            android.util.Log.d("PendienteDebug", "Pendientes encontrados: ${pendientes.size}")
 
             var eliminacionesExitosas = 0
 
