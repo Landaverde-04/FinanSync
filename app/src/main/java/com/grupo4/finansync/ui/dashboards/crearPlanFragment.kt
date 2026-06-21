@@ -1,60 +1,122 @@
 package com.grupo4.finansync.ui.dashboards
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.grupo4.finansync.R
+import android.widget.Toast
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.tabs.TabLayout
+import com.grupo4.finansync.bd.BaseDatos
+import com.grupo4.finansync.data.remote.SupabaseCliente
+import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
+import com.grupo4.finansync.databinding.FragmentCrearPlanBinding
+import com.grupo4.finansync.modelo.PlanAhorroEntidad
+import io.github.jan.supabase.gotrue.auth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [crearPlanFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class crearPlanFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
+    private var _binding: FragmentCrearPlanBinding? = null
+    private val binding get() = _binding!!
+
+    private lateinit var repositorio: RepositorioPlanAhorro
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentCrearPlanBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val database = BaseDatos.obtenerInstancia(requireContext())
+        repositorio = RepositorioPlanAhorro(database.planAhorroDao())
+
+        binding.btnVolverACrudar.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.btnCancelarPlan.setOnClickListener { parentFragmentManager.popBackStack() }
+
+        binding.tabLayoutMetodos.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                when (tab?.position) {
+                    0 -> binding.tilInputDinamico.hint = "Porcentaje de cada ingreso (%)"
+                    1 -> binding.tilInputDinamico.hint = "Monto fijo por ingreso ($)"
+                }
+                binding.etMontoDinamico.setText("")
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+
+        binding.btnGuardarPlan.setOnClickListener {
+            val nombre = binding.etNombrePlan.text.toString().trim()
+            val montoMetaVal = binding.etMontoMeta.text.toString().trim().toDoubleOrNull() ?: 0.0
+            val inputDinamico = binding.etMontoDinamico.text.toString().trim().toDoubleOrNull() ?: 0.0
+            val estaActivo = binding.switchActivo.isChecked
+
+            if (nombre.isEmpty()) {
+                Toast.makeText(requireContext(), "El nombre no puede estar vacío", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (montoMetaVal <= 0.0) {
+                Toast.makeText(requireContext(), "Ingrese una meta válida mayor a 0", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            var porcentajeVal = 0.0
+            var montoFijoVal = 0.0
+
+            val metodoSeleccionado = when (binding.tabLayoutMetodos.selectedTabPosition) {
+                0 -> {
+                    porcentajeVal = inputDinamico
+                    "porcentaje"
+                }
+                else -> {
+                    montoFijoVal = inputDinamico
+                    "fijo"
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id ?: "usuario-prueba-001"
+
+                    val nuevoPlan = PlanAhorroEntidad(
+                        idUsuario = idUsuario,
+                        metodo = metodoSeleccionado,
+                        porcentaje = porcentajeVal,
+                        montoFijo = montoFijoVal,
+                        montoMeta = montoMetaVal,
+                        nombrePlan=nombre,
+                        activo = estaActivo
+                    )
+
+                    repositorio.insertarPlanAhorro(nuevoPlan)
+
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "¡Plan guardado exitosamente!", Toast.LENGTH_SHORT).show()
+                        parentFragmentManager.popBackStack()
+                    }
+                } catch (e: Exception) {
+                    Log.e("ERROR_GUARDAR_PLAN", "Causa del fallo: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(requireContext(), "Error crítico al guardar: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_crear_plan, container, false)
-    }
-
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment crearPlanFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            crearPlanFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }
+

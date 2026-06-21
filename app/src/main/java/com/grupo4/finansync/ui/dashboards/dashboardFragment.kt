@@ -25,7 +25,6 @@ import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentDashboardBinding
 import com.grupo4.finansync.ui.transaccion.TransaccionAdapter
 import com.grupo4.finansync.ui.dashboards.fragmentGraficosReportes
-import com.grupo4.finansync.ui.dashboards.crearPlanFragment
 import java.util.Locale
 
 class dashboardFragment : Fragment() {
