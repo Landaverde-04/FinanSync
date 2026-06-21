@@ -31,13 +31,14 @@ class RepositorioPresupuesto(private val presupuestoDao: PresupuestoDao) {
 
     // ── ESCRITURA ─────────────────────────────────────────────────────────────
 
-    suspend fun insertarPresupuesto(presupuesto: PresupuestoEntidad) {
-        presupuestoDao.insertarPresupuesto(presupuesto)
+    suspend fun insertarPresupuesto(presupuesto: PresupuestoEntidad): Long {
+        val idGenerado = presupuestoDao.insertarPresupuesto(presupuesto)
         try {
-            SupabaseCliente.cliente.postgrest["presupuesto"].upsert(presupuesto)
+            SupabaseCliente.cliente.postgrest["presupuesto"].upsert(presupuesto.copy(idPresupuesto = idGenerado.toInt()))
         } catch (e: Exception) {
             Log.e("RepositorioPresupuesto", "Error al sincronizar inserción: ${e.message}")
         }
+        return idGenerado
     }
 
     suspend fun actualizarPresupuesto(presupuesto: PresupuestoEntidad) {

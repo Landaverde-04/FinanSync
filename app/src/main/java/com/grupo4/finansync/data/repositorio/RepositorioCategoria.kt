@@ -27,13 +27,14 @@ class RepositorioCategoria(private val categoriaDao: CategoriaDao) {
 
     // ── ESCRITURA ─────────────────────────────────────────────────────────────
 
-    suspend fun insertarCategoria(categoria: CategoriaEntidad) {
-        categoriaDao.insertarCategoria(categoria)
+    suspend fun insertarCategoria(categoria: CategoriaEntidad): Long {
+        val idGenerado = categoriaDao.insertarCategoria(categoria)
         try {
-            SupabaseCliente.cliente.postgrest["categorias"].upsert(categoria)
+            SupabaseCliente.cliente.postgrest["categorias"].upsert(categoria.copy(idCategoria = idGenerado.toInt()))
         } catch (e: Exception) {
             Log.e("RepositorioCategoria", "Error al sincronizar inserción: ${e.message}")
         }
+        return idGenerado
     }
 
     suspend fun actualizarCategoria(categoria: CategoriaEntidad) {
