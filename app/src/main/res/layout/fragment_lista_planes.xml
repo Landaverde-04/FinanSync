@@ -50,7 +50,10 @@
             app:boxCornerRadiusBottomEnd="12dp"
             app:boxStrokeColor="#2563EB"
             app:startIconDrawable="@android:drawable/ic_menu_search"
-            app:startIconTint="#64748B">
+            app:startIconTint="#64748B"
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_btn_speak_now"
+            app:endIconTint="#2563EB">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etBuscarPlan"

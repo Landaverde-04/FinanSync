@@ -1,6 +1,11 @@
 package com.grupo4.finansync.ui.dashboards
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -8,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -18,11 +24,11 @@ import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.databinding.FragmentListaPlanesBinding
 import com.grupo4.finansync.modelo.PlanAhorroEntidad
-import com.google.android.material.chip.ChipGroup
 import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class listaPlanesFragment : Fragment() {
 
@@ -30,7 +36,9 @@ class listaPlanesFragment : Fragment() {
     private val binding get() = _binding!!
 
     private var textoBusqueda: String = ""
-    private var filtroEstado: String = "Todos" // "Todos", "Activos", "Inactivos", "Completadas"
+    private var filtroEstado: String = "Todos"
+    private val REQUEST_CODE_VOZ = 101
+    private var textToSpeech: TextToSpeech? = null
 
     private val viewModel: PlanesViewModel by viewModels {
         val database = BaseDatos.obtenerInstancia(requireContext())
@@ -51,6 +59,12 @@ class listaPlanesFragment : Fragment() {
 
         val database = BaseDatos.obtenerInstancia(requireContext())
 
+        textToSpeech = TextToSpeech(requireContext()) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                textToSpeech?.setLanguage(Locale("es", "ES"))
+            }
+        }
+
         binding.btnVolverDeLista.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
@@ -59,7 +73,6 @@ class listaPlanesFragment : Fragment() {
             irA(crearPlanFragment())
         }
 
-        // Escuchar el buscador de texto
         binding.etBuscarPlan.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -69,7 +82,6 @@ class listaPlanesFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // Escuchar los Chips de filtrado
         binding.chipGroupFiltros.setOnCheckedChangeListener { _, checkedId ->
             filtroEstado = when (checkedId) {
                 R.id.chipActivos -> "Activos"
@@ -78,6 +90,19 @@ class listaPlanesFragment : Fragment() {
                 else -> "Todos"
             }
             aplicarFiltrosYActualizar()
+        }
+
+        binding.tilBuscadorPlanes.setEndIconOnClickListener {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Di el nombre de la alcancía...")
+            }
+            try {
+                startActivityForResult(intent, REQUEST_CODE_VOZ)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(requireContext(), "El reconocimiento de voz no está soportado.", Toast.LENGTH_SHORT).show()
+            }
         }
 
         viewModel.planesActivosLiveData.observe(viewLifecycleOwner) { listaPlanes ->
@@ -101,11 +126,14 @@ class listaPlanesFragment : Fragment() {
         }
     }
 
+    private fun hablar(texto: String) {
+        textToSpeech?.speak(texto, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
     private fun aplicarFiltrosYActualizar() {
         val planesOriginales = viewModel.planesActivosLiveData.value ?: emptyList()
         val progresos = viewModel.mapaProgreso.value
 
-        // 1. Filtrar primero por texto de búsqueda
         var listaFiltrada = if (textoBusqueda.isEmpty()) {
             planesOriginales
         } else {
@@ -114,7 +142,6 @@ class listaPlanesFragment : Fragment() {
             }
         }
 
-        // 2. Filtrar por el Chip de estado seleccionado
         listaFiltrada = listaFiltrada.filter { plan ->
             val dineroActual = progresos[plan.idAhorro] ?: 0.0
             val metaTotal = plan.montoMeta ?: 1.0
@@ -124,7 +151,7 @@ class listaPlanesFragment : Fragment() {
                 "Activos" -> plan.activo && !metaCompletada
                 "Inactivos" -> !plan.activo && !metaCompletada
                 "Completadas" -> metaCompletada
-                else -> true // "Todos"
+                else -> true
             }
         }
 
@@ -171,6 +198,8 @@ class listaPlanesFragment : Fragment() {
                     holder.itemView.alpha = 0.7f
 
                     if (plan.activo) {
+                        hablar("¡Felicidades! Has completado tu meta de ahorro para ${plan.nombrePlan}")
+
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                             val planDesactivado = plan.copy(activo = false)
                             repoPlan.actualizarPlanAhorro(planDesactivado)
@@ -248,7 +277,25 @@ class listaPlanesFragment : Fragment() {
             .commit()
     }
 
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_CODE_VOZ && resultCode == Activity.RESULT_OK && data != null) {
+            val resultado = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            val textoEscuchado = resultado?.get(0) ?: ""
+
+            if (textoEscuchado.isNotEmpty()) {
+                binding.etBuscarPlan.setText(textoEscuchado)
+                textoBusqueda = textoEscuchado
+                aplicarFiltrosYActualizar()
+            }
+        }
+    }
+
     override fun onDestroyView() {
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
         super.onDestroyView()
         _binding = null
     }
