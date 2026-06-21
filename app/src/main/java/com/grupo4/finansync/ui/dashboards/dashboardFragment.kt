@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
@@ -16,7 +17,7 @@ import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
-import com.github.mikephil.charting.utils.ColorTemplate
+import com.github.mikephil.charting.formatter.ValueFormatter
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.repositorio.RepositorioCategoria
@@ -24,7 +25,6 @@ import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentDashboardBinding
 import com.grupo4.finansync.ui.transaccion.TransaccionAdapter
-import com.grupo4.finansync.ui.dashboards.fragmentGraficosReportes
 import java.util.Locale
 
 class dashboardFragment : Fragment() {
@@ -70,44 +70,13 @@ class dashboardFragment : Fragment() {
         viewModel.totalIngresosLiveData.observe(viewLifecycleOwner) { ingresos ->
             val ing = (ingresos ?: 0.0).toFloat()
             binding.txtIngresosMensuales.text = String.format(Locale.US, "$%.2f", ing)
-            actualizarGraficoBarras()
+            actualizarGraficas()
         }
 
         viewModel.totalGastosLiveData.observe(viewLifecycleOwner) { gastos ->
             val gas = (gastos ?: 0.0).toFloat()
             binding.txtGastosMensuales.text = String.format(Locale.US, "$%.2f", gas)
-            actualizarGraficoBarras()
-        }
-
-        viewModel.gastosPorCategoriaReal.observe(viewLifecycleOwner) { listaCategorias ->
-            if (listaCategorias != null) {
-                val entries = listaCategorias.map { PieEntry(it.monto, it.nombreCategoria) }
-                val dataSet = PieDataSet(entries.ifEmpty { listOf(PieEntry(0f, "Sin Gastos")) }, "").apply {
-                    colors = ColorTemplate.COLORFUL_COLORS.toList()
-                    valueTextSize = 10f
-                    valueTextColor = Color.WHITE
-                }
-                binding.pieChartDashboard.apply {
-                    data = PieData(dataSet)
-                    description.isEnabled = false
-                    isDrawHoleEnabled = true
-                    holeRadius = 50f
-                    transparentCircleRadius = 55f
-                    setDrawEntryLabels(false)
-
-                    legend.apply {
-                        isEnabled = true
-                        verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
-                        horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
-                        orientation = Legend.LegendOrientation.HORIZONTAL
-                        setDrawInside(false)
-                        textSize = 10f
-                        textColor = Color.parseColor("#64748B")
-                        isWordWrapEnabled = true
-                    }
-                    invalidate()
-                }
-            }
+            actualizarGraficas()
         }
 
         viewModel.transaccionesRecientes.observe(viewLifecycleOwner) { transacciones ->
@@ -125,23 +94,91 @@ class dashboardFragment : Fragment() {
             .commit()
     }
 
-    private fun actualizarGraficoBarras() {
+    private fun actualizarGraficas() {
         val ingresos = viewModel.totalIngresosLiveData.value?.toFloat() ?: 0f
         val gastos = viewModel.totalGastosLiveData.value?.toFloat() ?: 0f
+
+        val colorTextoTema = if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES) {
+            Color.WHITE
+        } else {
+            Color.parseColor("#64748B")
+        }
 
         val entradaIngreso = BarEntry(1f, ingresos)
         val entradaGasto = BarEntry(2f, gastos)
 
-        val dsIngresos = BarDataSet(listOf(entradaIngreso), "Ingresos").apply { color = Color.parseColor("#16A34A") }
-        val dsGastos = BarDataSet(listOf(entradaGasto), "Gastos").apply { color = Color.parseColor("#DC2626") }
+        val dsIngresos = BarDataSet(listOf(entradaIngreso), "Ingresos").apply {
+            color = Color.parseColor("#16A34A")
+            setDrawValues(false)
+        }
+        val dsGastos = BarDataSet(listOf(entradaGasto), "Gastos").apply {
+            color = Color.parseColor("#DC2626")
+            setDrawValues(false)
+        }
 
         binding.barChartDashboard.apply {
             data = BarData(dsIngresos, dsGastos)
             description.isEnabled = false
             legend.isEnabled = false
             xAxis.isEnabled = false
-            axisLeft.axisMinimum = 0f
+            axisLeft.apply {
+                axisMinimum = 0f
+                textColor = colorTextoTema
+                setDrawGridLines(true)
+            }
             axisRight.isEnabled = false
+            invalidate()
+        }
+
+        val pieEntries = mutableListOf<PieEntry>()
+        val listaColores = mutableListOf<Int>()
+
+        if (ingresos == 0f && gastos == 0f) {
+            pieEntries.add(PieEntry(1f, "Sin Movimientos"))
+            listaColores.add(Color.parseColor("#E2E8F0"))
+        } else {
+            if (ingresos > 0f) {
+                pieEntries.add(PieEntry(ingresos, "Ingresos"))
+                listaColores.add(Color.parseColor("#16A34A"))
+            }
+            if (gastos > 0f) {
+                pieEntries.add(PieEntry(gastos, "Gastos"))
+                listaColores.add(Color.parseColor("#DC2626"))
+            }
+        }
+
+        val pieDataSet = PieDataSet(pieEntries, "").apply {
+            colors = listaColores
+            valueTextSize = 11f
+            valueTextColor = Color.WHITE
+            setDrawValues(ingresos > 0f || gastos > 0f)
+            valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    return String.format(Locale.US, "$%.0f", value)
+                }
+            }
+        }
+
+        binding.pieChartDashboard.apply {
+            data = PieData(pieDataSet)
+            description.isEnabled = false
+            isDrawHoleEnabled = true
+            holeRadius = 45f
+            transparentCircleRadius = 50f
+            setDrawEntryLabels(false)
+
+            setExtraOffsets(2f, 2f, 2f, 2f)
+
+            legend.apply {
+                isEnabled = true
+                verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                orientation = Legend.LegendOrientation.HORIZONTAL
+                setDrawInside(false)
+                textSize = 9f
+                textColor = colorTextoTema
+                isWordWrapEnabled = true
+            }
             invalidate()
         }
     }

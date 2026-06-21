@@ -167,14 +167,14 @@ class fragmentGraficosReportes : Fragment() {
 
                 val dataSet = PieDataSet(gastosAgrupados.ifEmpty { listOf(PieEntry(0f, "Sin Datos")) }, "").apply {
                     colors = ColorTemplate.COLORFUL_COLORS.toList()
-                    valueTextSize = 12f
-                    valueTextColor = Color.WHITE
+                    setDrawValues(false) // 🌟 Ocultar números colapsados dentro de las porciones del pastel
                 }
                 binding.pieChartReportes.apply {
                     data = PieData(dataSet)
                     description.isEnabled = false
-                    setDrawEntryLabels(false)
+                    setDrawEntryLabels(false) // Quita también etiquetas de texto internas
                     legend.textColor = colorTextoGrafico
+                    legend.isWordWrapEnabled = true // Ajusta las leyendas abajo con salto de línea
                     invalidate()
                 }
             }
@@ -184,11 +184,11 @@ class fragmentGraficosReportes : Fragment() {
 
                 val dsIng = BarDataSet(listOf(BarEntry(1f, ingresos)), "Ingresos").apply {
                     color = Color.parseColor("#2E7D32")
-                    valueTextColor = colorTextoGrafico
+                    setDrawValues(false)
                 }
                 val dsGas = BarDataSet(listOf(BarEntry(2f, gastos)), "Gastos").apply {
                     color = Color.parseColor("#C62828")
-                    valueTextColor = colorTextoGrafico
+                    setDrawValues(false)
                 }
 
                 binding.barChartReportes.apply {
@@ -198,6 +198,7 @@ class fragmentGraficosReportes : Fragment() {
                     axisLeft.textColor = colorTextoGrafico
                     axisRight.textColor = colorTextoGrafico
                     legend.textColor = colorTextoGrafico
+                    legend.isWordWrapEnabled = true
                     invalidate()
                 }
             }
@@ -257,6 +258,7 @@ class fragmentGraficosReportes : Fragment() {
 
                     axisRight.isEnabled = false
                     legend.textColor = colorTextoGrafico
+                    legend.isWordWrapEnabled = true
                     animateX(600)
                     invalidate()
                 }
