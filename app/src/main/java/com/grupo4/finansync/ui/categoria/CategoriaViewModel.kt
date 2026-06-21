@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import com.grupo4.finansync.data.remote.SupabaseCliente
+import io.github.jan.supabase.postgrest.postgrest
 
 class CategoriaViewModel(
     private val repositorioCategoria: RepositorioCategoria,
@@ -71,6 +73,51 @@ class CategoriaViewModel(
                     tipo = tipo
                 )
             )
+        }
+    }
+ 
+    fun sincronizarPendientes(idUsuario: String, context: android.content.Context) {
+        viewModelScope.launch {
+            try {
+                // 1. Procesar eliminaciones pendientes
+                val prefs = context.getSharedPreferences("eliminaciones_pendientes_m3", android.content.Context.MODE_PRIVATE)
+                val todas = prefs.all
+                todas.keys.filter { it.startsWith("cat_${idUsuario}_") }.forEach { clave ->
+                    val idCategoria = prefs.getInt(clave, -1)
+                    if (idCategoria != -1) {
+                        try {
+                            SupabaseCliente.cliente.postgrest["categorias"].delete {
+                                filter { eq("idCategoria", idCategoria) }
+                            }
+                            prefs.edit().remove(clave).apply()
+                            android.util.Log.d("CategoriaViewModel", "Eliminación pendiente de categoría sincronizada: $idCategoria")
+                        } catch (e: Exception) {
+                            android.util.Log.e("CategoriaViewModel", "Error al eliminar categoría pendiente: ${e.message}")
+                        }
+                    }
+                }
+
+                // 2. Procesar inserciones pendientes
+                val locales = repositorioCategoria.obtenerCategoriasPorUsuario(idUsuario).firstOrNull() ?: emptyList()
+                if (locales.isNotEmpty()) {
+                    val remotas = SupabaseCliente.cliente.postgrest["categorias"]
+                        .select { filter { eq("idUsuario", idUsuario) } }
+                        .decodeList<CategoriaEntidad>()
+                    val idsEnNube = remotas.map { it.idCategoria }.toSet()
+
+                    val pendientes = locales.filter { it.idCategoria !in idsEnNube }
+                    pendientes.forEach { cat ->
+                        try {
+                            SupabaseCliente.cliente.postgrest["categorias"].upsert(cat)
+                            android.util.Log.d("CategoriaViewModel", "Inserción pendiente de categoría sincronizada: ${cat.nombreCategoria}")
+                        } catch (e: Exception) {
+                            android.util.Log.e("CategoriaViewModel", "Error al subir categoría pendiente: ${e.message}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CategoriaViewModel", "Error en sincronizarPendientes: ${e.message}")
+            }
         }
     }
 
