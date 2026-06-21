@@ -12,11 +12,9 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.databinding.FragmentAjustesBinding
-import com.grupo4.finansync.ui.auth.AuthActivity
 import com.grupo4.finansync.ui.auth.AuthPrefs
 import com.grupo4.finansync.ui.auth.BiometricKeyManager
 import io.github.jan.supabase.gotrue.auth
@@ -58,7 +56,6 @@ class AjustesFragment : Fragment() {
         cargarDatosUsuario()
         cargarPreferencias()
         configurarSwitches()
-        configurarCerrarSesion()
     }
 
     // ── Toolbar ───────────────────────────────────────────────────────────
@@ -150,8 +147,20 @@ class AjustesFragment : Fragment() {
         binding.switchLecturaVoz.isChecked =
             prefs.getBoolean(KEY_VOZ, true)
 
-        binding.switchHuella.isChecked =
-            prefs.getBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
+        val idUsuarioActual =
+            SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+
+        val idUsuarioConHuella = prefs.getString(
+            AuthPrefs.PREF_HUELLA_USUARIO_ID,
+            null
+        )
+
+        val huellaPerteneceAlUsuarioActual =
+            prefs.getBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false) &&
+                    idUsuarioActual != null &&
+                    idUsuarioActual == idUsuarioConHuella
+
+        binding.switchHuella.isChecked = huellaPerteneceAlUsuarioActual
     }
 
     // ── Configurar switches ───────────────────────────────────────────────
@@ -210,6 +219,23 @@ class AjustesFragment : Fragment() {
             Context.MODE_PRIVATE
         )
 
+        val usuarioActual =
+            SupabaseCliente.cliente.auth.currentUserOrNull()
+
+        if (usuarioActual == null) {
+            cambiarSwitchHuella(false)
+
+            Toast.makeText(
+                context,
+                "No hay usuario autenticado",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val correoUsuarioActual = usuarioActual.email
+
         val manager = BiometricManager.from(context)
 
         val puedeUsarHuella = manager.canAuthenticate(
@@ -250,6 +276,21 @@ class AjustesFragment : Fragment() {
             return
         }
 
+        if (
+            correoUsuarioActual.isNullOrEmpty() ||
+            !correoGuardado.equals(correoUsuarioActual, ignoreCase = true)
+        ) {
+            cambiarSwitchHuella(false)
+
+            Toast.makeText(
+                context,
+                "La huella solo puede activarse con la cuenta actual",
+                Toast.LENGTH_LONG
+            ).show()
+
+            return
+        }
+
         val executor = ContextCompat.getMainExecutor(context)
 
         val callback = object : BiometricPrompt.AuthenticationCallback() {
@@ -262,6 +303,10 @@ class AjustesFragment : Fragment() {
                 prefs.edit()
                     .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, true)
                     .putBoolean(AuthPrefs.PREF_SESION_PREVIA, true)
+                    .putString(
+                        AuthPrefs.PREF_HUELLA_USUARIO_ID,
+                        usuarioActual.id
+                    )
                     .apply()
 
                 cambiarSwitchHuella(true)
@@ -332,7 +377,10 @@ class AjustesFragment : Fragment() {
 
         prefs.edit()
             .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
+            .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
+            .remove(AuthPrefs.PREF_HUELLA_USUARIO_ID)
             .remove(AuthPrefs.PREF_PASSWORD_CIFRADA)
+            .remove(AuthPrefs.PREF_CORREO_GUARDADO)
             .apply()
 
         BiometricKeyManager.eliminarClave()
@@ -342,70 +390,6 @@ class AjustesFragment : Fragment() {
             "Login con huella desactivado",
             Toast.LENGTH_SHORT
         ).show()
-    }
-
-    // ── Cerrar sesión ─────────────────────────────────────────────────────
-    private fun configurarCerrarSesion() {
-        binding.btnCerrarSesion.setOnClickListener {
-            cerrarSesion()
-        }
-    }
-
-    private fun cerrarSesion() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Cerrar sesión")
-            .setMessage("¿Quieres salir de tu cuenta?")
-            .setNegativeButton("Cancelar", null)
-            .setPositiveButton("Cerrar sesión") { _, _ ->
-
-                lifecycleScope.launch {
-                    val prefs = requireContext().getSharedPreferences(
-                        AuthPrefs.PREFS,
-                        Context.MODE_PRIVATE
-                    )
-
-                    val huellaActiva = prefs.getBoolean(
-                        AuthPrefs.PREF_HUELLA_ACTIVA,
-                        false
-                    )
-
-                    try {
-                        SupabaseCliente.cliente.auth.signOut()
-                    } catch (e: Exception) {
-                        // Si falla el logout remoto no detenemos la salida
-                    }
-
-                    /*
-                     * Si la huella está activa, conservamos las credenciales cifradas.
-                     * Así el usuario puede volver a entrar con huella.
-                     */
-                    if (!huellaActiva) {
-                        BiometricKeyManager.eliminarClave()
-
-                        prefs.edit()
-                            .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
-                            .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
-                            .putBoolean(
-                                AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
-                                false
-                            )
-                            .remove(AuthPrefs.PREF_PASSWORD_CIFRADA)
-                            .apply()
-
-                    } else {
-                        prefs.edit()
-                            .putBoolean(
-                                AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
-                                false
-                            )
-                            .apply()
-                    }
-
-                    AuthActivity.iniciar(requireContext())
-                    requireActivity().finish()
-                }
-            }
-            .show()
     }
 
     override fun onDestroyView() {

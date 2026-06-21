@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_dashboard"
+        android:title="Dashboard" />
+
+    <item
+        android:id="@+id/nav_agregar"
+        android:title="Agregar transacción" />
+
+    <item
+        android:id="@+id/nav_movimientos"
+        android:title="Ver movimientos" />
+
+    <item
+        android:id="@+id/nav_reportes"
+        android:title="Reportes" />
+
+    <item
+        android:id="@+id/nav_categorias"
+        android:title="Categorías y presupuestos" />
+
+    <item
+        android:id="@+id/nav_ajustes"
+        android:title="Ajustes" />
+
+    <item
+        android:id="@+id/nav_cerrar_sesion"
+        android:title="Cerrar sesión" />
+
+</menu>
