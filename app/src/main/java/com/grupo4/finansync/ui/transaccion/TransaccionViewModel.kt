@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.grupo4.finansync.data.repositorio.RepositorioCategoria
+import com.grupo4.finansync.data.repositorio.RepositorioPlanAhorro
+import com.grupo4.finansync.data.repositorio.RepositorioProgresoAhorro
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.data.repositorio.RepositorioUsuario
 import com.grupo4.finansync.modelo.CategoriaEntidad
+import com.grupo4.finansync.modelo.PlanAhorroEntidad
+import com.grupo4.finansync.modelo.ProgresoAhorroEntidad
 import com.grupo4.finansync.modelo.TransaccionEntidad
 import com.grupo4.finansync.modelo.UsuarioEntidad
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,12 +22,61 @@ class TransaccionViewModel(
     private val repositorio: RepositorioTransaccion,
     // Repositorios extra solo para sembrar datos de prueba (mock). Se quitan cuando M2/M3 estén listos.
     private val repositorioUsuario: RepositorioUsuario,
-    private val repositorioCategoria: RepositorioCategoria
+    private val repositorioCategoria: RepositorioCategoria,
+    // Repositorios de ahorro: para destinar parte de un ingreso a un plan de ahorro
+    private val repositorioPlanAhorro: RepositorioPlanAhorro,
+    private val repositorioProgresoAhorro: RepositorioProgresoAhorro
 ) : ViewModel() {
 
     // Lista de categorías del usuario, que el spinner va a observar.
     private val _categorias = MutableStateFlow<List<CategoriaEntidad>>(emptyList())
     val categorias: StateFlow<List<CategoriaEntidad>> = _categorias.asStateFlow()
+
+    // ── AHORRO EN INGRESOS ────────────────────────────────────────────────────
+
+    // Planes de ahorro activos del usuario, para mostrarlos en el selector.
+    private val _planesActivos = MutableStateFlow<List<PlanAhorroEntidad>>(emptyList())
+    val planesActivos: StateFlow<List<PlanAhorroEntidad>> = _planesActivos.asStateFlow()
+
+    /** Carga los planes de ahorro ACTIVOS del usuario para el spinner de ahorro. */
+    fun cargarPlanesActivos(idUsuario: String) {
+        viewModelScope.launch {
+            repositorioPlanAhorro.obtenerPlanesAhorroActivosPorUsuario(idUsuario).collect { lista ->
+                _planesActivos.value = lista
+            }
+        }
+    }
+
+    /**
+     * Calcula el monto que se SUGIERE ahorrar al elegir un plan, según su método:
+     *  - "porcentaje": ese % del ingreso (ej. 10% de $100 = $10)
+     *  - "monto fijo"/"fijo": el monto fijo configurado (ej. $3)
+     *  - otro: 0 (que el usuario lo escriba)
+     * No aplica todavía el límite del faltante; eso se valida al guardar.
+     */
+    fun calcularSugerido(plan: PlanAhorroEntidad, montoIngreso: Double): Double {
+        val sugerido = when {
+            plan.metodo.contains("porcentaje", ignoreCase = true) ->
+                montoIngreso * (plan.porcentaje ?: 0.0) / 100.0
+            else ->
+                plan.montoFijo ?: 0.0
+        }
+        // Redondeamos a 2 decimales para evitar valores tipo 9.999999
+        return Math.round(sugerido * 100.0) / 100.0
+    }
+
+    /**
+     * Devuelve cuánto FALTA para completar la meta de un plan:
+     *   faltante = montoMeta - (suma de lo ya ahorrado)
+     * Si el plan no tiene meta, devuelve un valor muy grande (sin tope práctico).
+     * Es suspend porque consulta la BD (la suma del progreso).
+     */
+    suspend fun obtenerFaltante(idAhorro: Int, montoMeta: Double?): Double {
+        val yaAhorrado = repositorioProgresoAhorro.sumarMontoAhorradoPorPlan(idAhorro)
+        val meta = montoMeta ?: Double.MAX_VALUE
+        val faltante = meta - yaAhorrado
+        return if (faltante < 0) 0.0 else faltante
+    }
 
     /**
      * TEMPORAL (mock): crea un usuario y varias categorías de prueba si no existen,
@@ -115,6 +168,40 @@ class TransaccionViewModel(
         }
     }
 
+    /**
+     * Guarda un INGRESO que destina parte a uno o varios planes de ahorro.
+     *
+     * @param transaccion el ingreso YA REDUCIDO (monto = ingreso - total ahorrado)
+     * @param aportes lista de (idPlan, montoAhorrado) a registrar en progreso_ahorro
+     *
+     * Guarda la transacción y, por cada aporte, registra un progreso de ahorro.
+     * Las validaciones (no pasar la meta, no ahorrar más que el ingreso) se hacen
+     * ANTES en el Fragment; aquí solo persistimos lo ya validado.
+     */
+    fun guardarIngresoConAhorro(
+        transaccion: TransaccionEntidad,
+        aportes: List<Pair<Int, Double>>
+    ) {
+        viewModelScope.launch {
+            // 1. Guardar la transacción de ingreso (ya reducida)
+            repositorio.insertarTransaccion(transaccion)
+
+            // 2. Por cada plan elegido, registrar el dinero aportado
+            for ((idPlan, monto) in aportes) {
+                if (monto > 0) {
+                    repositorioProgresoAhorro.insertarProgresoAhorro(
+                        ProgresoAhorroEntidad(
+                            idAhorroProgreso = 0,           // Room asigna el id
+                            idAhorro = idPlan,
+                            montoAhorrado = monto,
+                            registradoEn = transaccion.creadoEn
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     fun eliminarTransaccion(transaccion: TransaccionEntidad) {
         viewModelScope.launch {
             repositorio.eliminarTransaccion(transaccion)
@@ -129,7 +216,9 @@ class TransaccionViewModel(
     class Factory(
         private val repositorio: RepositorioTransaccion,
         private val repositorioUsuario: RepositorioUsuario,
-        private val repositorioCategoria: RepositorioCategoria
+        private val repositorioCategoria: RepositorioCategoria,
+        private val repositorioPlanAhorro: RepositorioPlanAhorro,
+        private val repositorioProgresoAhorro: RepositorioProgresoAhorro
     ) : ViewModelProvider.Factory {
 
         // Android llama a este método cuando necesita crear el ViewModel
@@ -137,7 +226,8 @@ class TransaccionViewModel(
             // Construimos el ViewModel pasándole los repositorios y lo devolvemos
             @Suppress("UNCHECKED_CAST")
             return TransaccionViewModel(
-                repositorio, repositorioUsuario, repositorioCategoria
+                repositorio, repositorioUsuario, repositorioCategoria,
+                repositorioPlanAhorro, repositorioProgresoAhorro
             ) as T
         }
     }
