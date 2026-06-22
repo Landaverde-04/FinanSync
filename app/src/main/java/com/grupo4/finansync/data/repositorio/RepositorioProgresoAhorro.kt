@@ -31,12 +31,33 @@ class RepositorioProgresoAhorro(private val progresoAhorroDao: ProgresoAhorroDao
     // ── ESCRITURA ─────────────────────────────────────────────────────────────
 
     suspend fun insertarProgresoAhorro(progreso: ProgresoAhorroEntidad) {
-        progresoAhorroDao.insertarProgresoAhorro(progreso)
+        // Guardar local como pendiente
+        val id = progresoAhorroDao.insertarProgresoAhorro(
+            progreso.copy(sincronizada = false)
+        ).toInt()
         try {
-            SupabaseCliente.cliente.postgrest["progreso_ahorro"].upsert(progreso)
+            SupabaseCliente.cliente.postgrest["progreso_ahorro"]
+                .upsert(progreso.copy(idAhorroProgreso = id))
+            progresoAhorroDao.marcarComoSincronizado(id)
         } catch (e: Exception) {
-            Log.e("RepositorioProgresoAhorro", "Error al sincronizar inserción: ${e.message}")
+            Log.e("RepositorioProgresoAhorro", "Sin conexión, queda pendiente: ${e.message}")
         }
+    }
+
+    /** Sube los progresos guardados offline. Devuelve cuántos subió. */
+    suspend fun subirPendientes(): Int {
+        val pendientes = progresoAhorroDao.obtenerNoSincronizados()
+        var subidos = 0
+        for (p in pendientes) {
+            try {
+                SupabaseCliente.cliente.postgrest["progreso_ahorro"].upsert(p)
+                progresoAhorroDao.marcarComoSincronizado(p.idAhorroProgreso)
+                subidos++
+            } catch (e: Exception) {
+                Log.e("RepositorioProgresoAhorro", "No se pudo subir ${p.idAhorroProgreso}: ${e.message}")
+            }
+        }
+        return subidos
     }
 
     suspend fun actualizarProgresoAhorro(progreso: ProgresoAhorroEntidad) {

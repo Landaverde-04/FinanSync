@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Representa la tabla COMPROBANTES en la base de datos local.
@@ -40,5 +41,9 @@ data class ComprobanteEntidad(
     // Texto extraído por OCR; null si aún no se procesó o falló el reconocimiento
     val textoOcr: String? = null,
 
-    val creadoEn: Long
+    val creadoEn: Long,
+
+    // SOLO LOCAL: false = pendiente de subir (guardado offline); true = ya en la nube.
+    @Transient
+    val sincronizada: Boolean = true
 )

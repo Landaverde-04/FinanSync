@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Representa la tabla TRANSACCIONES en la base de datos local.
@@ -57,5 +58,11 @@ data class TransaccionEntidad(
     val longitud: Double? = null,
 
     // Marca de tiempo Unix (milisegundos)
-    val creadoEn: Long
+    val creadoEn: Long,
+
+    // SOLO LOCAL: indica si esta transacción ya se subió a Supabase.
+    // @Transient evita que se envíe a la nube (Supabase no necesita esta columna).
+    // false = pendiente de subir (guardada offline); true = ya sincronizada.
+    @Transient
+    val sincronizada: Boolean = true
 )

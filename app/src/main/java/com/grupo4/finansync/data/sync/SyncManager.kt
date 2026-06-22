@@ -3,6 +3,9 @@ package com.grupo4.finansync.data.sync
 import android.util.Log
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.remote.SupabaseCliente
+import com.grupo4.finansync.data.repositorio.RepositorioComprobante
+import com.grupo4.finansync.data.repositorio.RepositorioProgresoAhorro
+import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.modelo.CategoriaEntidad
 import com.grupo4.finansync.modelo.ComprobanteEntidad
 import com.grupo4.finansync.modelo.PlanAhorroEntidad
@@ -34,6 +37,19 @@ class SyncManager(private val bd: BaseDatos) {
      */
     suspend fun sincronizarTodo(idUsuario: String): Boolean {
         return try {
+            // ── PASO 0: SUBIR lo guardado offline ANTES de bajar ──
+            // Si no subimos primero, la bajada pisaría las transacciones locales
+            // que aún no están en la nube y se perderían.
+            val repoTransaccion = RepositorioTransaccion(bd.transaccionDao())
+            val subidas = repoTransaccion.subirPendientes(idUsuario)
+            if (subidas > 0) Log.d("SyncManager", "Subidas $subidas transacciones pendientes")
+
+            // También subir progreso de ahorro y comprobantes pendientes
+            val progresosSubidos = RepositorioProgresoAhorro(bd.progresoAhorroDao()).subirPendientes()
+            if (progresosSubidos > 0) Log.d("SyncManager", "Subidos $progresosSubidos progresos de ahorro")
+            val comprobantesSubidos = RepositorioComprobante(bd.comprobanteDao()).subirPendientes()
+            if (comprobantesSubidos > 0) Log.d("SyncManager", "Subidos $comprobantesSubidos comprobantes")
+
             // ── Orden por dependencias (padres -> hijos) ──
 
             // 1. USUARIOS (no depende de nadie)

@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /**
  * Representa la tabla PROGRESO_AHORRO en la base de datos local.
@@ -35,5 +36,9 @@ data class ProgresoAhorroEntidad(
     val montoAhorrado: Double,
 
     // Marca de tiempo Unix (milisegundos) del momento en que se registró el progreso
-    val registradoEn: Long
+    val registradoEn: Long,
+
+    // SOLO LOCAL: false = pendiente de subir (guardado offline); true = ya en la nube.
+    @Transient
+    val sincronizada: Boolean = true
 )

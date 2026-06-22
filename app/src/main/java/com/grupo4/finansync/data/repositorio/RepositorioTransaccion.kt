@@ -35,16 +35,43 @@ class RepositorioTransaccion(private val transaccionDao: TransaccionDao) {
     // ── ESCRITURA ─────────────────────────────────────────────────────────────
 
     // Devuelve el id (Long) que Room generó para la transacción.
+    // Guarda como NO sincronizada y, si la subida a la nube funciona, la marca como sincronizada.
     suspend fun insertarTransaccion(transaccion: TransaccionEntidad): Long {
-        val idGenerado = transaccionDao.insertarTransaccion(transaccion)
+        // 1. Guardar local marcada como pendiente de subir
+        val idGenerado = transaccionDao.insertarTransaccion(
+            transaccion.copy(sincronizada = false)
+        )
+        // 2. Intentar subir a la nube
         try {
-            // Subimos a Supabase la transacción ya con su id real
             SupabaseCliente.cliente.postgrest["transacciones"]
                 .upsert(transaccion.copy(idTransaccion = idGenerado.toInt()))
+            // 3. Si subió bien, marcar como sincronizada
+            transaccionDao.marcarComoSincronizada(idGenerado.toInt())
         } catch (e: Exception) {
-            Log.e("RepositorioTransaccion", "Error al sincronizar inserción: ${e.message}")
+            // Sin red: queda como pendiente (sincronizada = false) para subir después
+            Log.e("RepositorioTransaccion", "Sin conexión, queda pendiente de subir: ${e.message}")
         }
         return idGenerado
+    }
+
+    /**
+     * Sube a Supabase las transacciones que quedaron pendientes (guardadas offline).
+     * Se llama al recuperar la conexión / al abrir la app con red.
+     * Devuelve cuántas logró subir.
+     */
+    suspend fun subirPendientes(idUsuario: String): Int {
+        val pendientes = transaccionDao.obtenerNoSincronizadas(idUsuario)
+        var subidas = 0
+        for (t in pendientes) {
+            try {
+                SupabaseCliente.cliente.postgrest["transacciones"].upsert(t)
+                transaccionDao.marcarComoSincronizada(t.idTransaccion)
+                subidas++
+            } catch (e: Exception) {
+                Log.e("RepositorioTransaccion", "No se pudo subir pendiente ${t.idTransaccion}: ${e.message}")
+            }
+        }
+        return subidas
     }
 
     suspend fun actualizarTransaccion(transaccion: TransaccionEntidad) {

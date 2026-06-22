@@ -39,7 +39,7 @@ import com.grupo4.finansync.modelo.UsuarioEntidad
         ProgresoAhorroEntidad::class,
         PresupuestoEntidad::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = false
 )
 abstract class BaseDatos : RoomDatabase() {

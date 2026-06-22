@@ -17,8 +17,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ProgresoAhorroDao {
 
+    // Devuelve el id generado, para poder marcarlo como sincronizado tras subirlo.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarProgresoAhorro(progreso: ProgresoAhorroEntidad)
+    suspend fun insertarProgresoAhorro(progreso: ProgresoAhorroEntidad): Long
 
     @Update
     suspend fun actualizarProgresoAhorro(progreso: ProgresoAhorroEntidad)
@@ -37,4 +38,11 @@ interface ProgresoAhorroDao {
     // Último registro del plan para mostrar el progreso más reciente en la UI
     @Query("SELECT * FROM progreso_ahorro WHERE idAhorro = :idAhorro ORDER BY registradoEn DESC LIMIT 1")
     suspend fun obtenerUltimoProgresoPorPlan(idAhorro: Int): ProgresoAhorroEntidad?
+
+    // ── Sincronización offline ──────────────────────────────────────────────
+    @Query("SELECT * FROM progreso_ahorro WHERE sincronizada = 0")
+    suspend fun obtenerNoSincronizados(): List<ProgresoAhorroEntidad>
+
+    @Query("UPDATE progreso_ahorro SET sincronizada = 1 WHERE idAhorroProgreso = :id")
+    suspend fun marcarComoSincronizado(id: Int)
 }
