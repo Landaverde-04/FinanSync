@@ -11,12 +11,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.android.gms.location.LocationServices
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.io.File
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
 import com.grupo4.finansync.data.remote.SupabaseCliente
@@ -243,12 +248,25 @@ class NuevaTransaccionFragment : Fragment() {
     private var rutaFotoComprobante: String? = null
     private var textoOcrComprobante: String? = null
 
+    // Lanzador del selector de galería: el usuario elige una imagen y nos devuelve su URI
+    private val selectorGaleria = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) procesarImagenGaleria(uri)
+    }
+
     private fun configurarCamara() {
+        // Botón cámara → pantalla de captura con CameraX
         binding.btnCamara.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .replace(R.id.contenedorFragment, CapturaComprobanteFragment())
                 .addToBackStack(null)
                 .commit()
+        }
+
+        // Botón galería → abre el selector de imágenes del sistema
+        binding.btnGaleria.setOnClickListener {
+            selectorGaleria.launch("image/*")
         }
 
         parentFragmentManager.setFragmentResultListener(
@@ -265,6 +283,57 @@ class NuevaTransaccionFragment : Fragment() {
 
             Toast.makeText(requireContext(), "Comprobante adjuntado", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /**
+     * Procesa una imagen elegida desde la galería: la copia a almacenamiento propio,
+     * corre el OCR (igual que la cámara) y autocompleta monto/fecha.
+     */
+    private fun procesarImagenGaleria(uri: Uri) {
+        try {
+            // 1. Copiar la imagen elegida a un archivo propio (ruta estable)
+            val archivo = File(requireContext().cacheDir, "comprobante_galeria_${System.currentTimeMillis()}.jpg")
+            requireContext().contentResolver.openInputStream(uri)?.use { entrada ->
+                archivo.outputStream().use { salida -> entrada.copyTo(salida) }
+            }
+
+            // 2. Correr el OCR sobre la imagen
+            val imagen = InputImage.fromFilePath(requireContext(), Uri.fromFile(archivo))
+            val reconocedor = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+            reconocedor.process(imagen)
+                .addOnSuccessListener { resultado ->
+                    val texto = resultado.text
+                    rutaFotoComprobante = archivo.absolutePath
+                    textoOcrComprobante = texto
+
+                    // Detectar monto y fecha con la misma lógica de la cámara
+                    val monto = detectarMontoSimple(texto)
+                    if (monto != null && monto > 0) binding.inputMonto.setText(monto.toString())
+                    val fecha = Regex("""\b(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})\b""").find(texto)?.value
+                    if (!fecha.isNullOrBlank()) aplicarFechaDetectada(fecha)
+
+                    Toast.makeText(requireContext(), "Imagen adjuntada desde galería", Toast.LENGTH_SHORT).show()
+                }
+                .addOnFailureListener {
+                    // Aunque falle el OCR, la imagen igual queda adjuntada
+                    rutaFotoComprobante = archivo.absolutePath
+                    Toast.makeText(requireContext(), "Imagen adjuntada (sin texto detectado)", Toast.LENGTH_SHORT).show()
+                }
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "No se pudo cargar la imagen", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Busca el monto en el texto: prioriza líneas con TOTAL, si no toma el número más grande. */
+    private fun detectarMontoSimple(texto: String): Double? {
+        val regexDinero = Regex("""\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+[.,]\d{2}""")
+        val lineaTotal = texto.lines().firstOrNull { it.contains("TOTAL", ignoreCase = true) }
+        if (lineaTotal != null) {
+            regexDinero.find(lineaTotal)?.value?.replace(",", "")?.toDoubleOrNull()?.let { return it }
+        }
+        return regexDinero.findAll(texto)
+            .mapNotNull { it.value.replace(",", "").toDoubleOrNull() }
+            .maxOrNull()
     }
 
     private fun aplicarFechaDetectada(fechaTexto: String) {
