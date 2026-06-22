@@ -27,7 +27,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
     // Emite "" al inicio; se actualiza cuando Supabase restaura la sesión
     private val _idUsuario = MutableStateFlow("")
 
-    // Estado de carga de sesión (true mientras no se ha resuelto el ID de usuario)
+    // Eagerly: arranca de inmediato y nunca se pausa aunque nadie escuche
     val cargandoSesion: StateFlow<Boolean> =
         _idUsuario.map { it.isEmpty() }
             .stateIn(viewModelScope, SharingStarted.Eagerly, true)
@@ -39,15 +39,10 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            repeat(20) { intento ->
+            repeat(20) { _ ->
                 val id = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-                android.util.Log.d("HistorialDebug", "Intento $intento, id=$id")
                 if (!id.isNullOrEmpty()) {
                     _idUsuario.value = id
-                    android.util.Log.d("HistorialDebug", "ID asignado: $id")
-                    // Verificar inmediatamente cuántas transacciones hay en Room
-                    val cuenta = transaccionDao.obtenerTransaccionesPorUsuario(id).first().size
-                    android.util.Log.d("HistorialDebug", "Room tiene $cuenta transacciones para este usuario")
                     return@launch
                 }
                 delay(100L)
@@ -55,7 +50,6 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    // Sincronizado al regresar conexion WIFI:
     fun reintentarSincronizacionPendiente() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -135,7 +129,8 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
     private val _textoBusqueda = MutableStateFlow("")
     val textoBusqueda: StateFlow<String> = _textoBusqueda.asStateFlow()
 
-    // ── Categorías: se activan cuando el ID ya está disponible ───────────────
+    // ── Categorías ───────────────────────────────────────────────────────────
+    // Eagerly: se mantiene activo siempre, sin importar si el Fragment está visible
     val nombresCategorias: StateFlow<Map<Int, String>> =
         _idUsuario
             .filter { it.isNotEmpty() }
@@ -143,9 +138,9 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
                 categoriaDao.obtenerCategoriasPorUsuario(id)
                     .map { lista -> lista.associate { it.idCategoria to it.nombreCategoria } }
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
-    // ── Transacciones: reactivas al ID ────────────────────────────────────────
+    // ── Transacciones ────────────────────────────────────────────────────────
     private val todasLasTransacciones: Flow<List<TransaccionEntidad>> =
         _idUsuario
             .filter { it.isNotEmpty() }
@@ -153,7 +148,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
                 transaccionDao.obtenerTransaccionesPorUsuario(id)
             }
 
-    // ── Lista filtrada ────────────────────────────────────────────────────────
+    // Eagerly: el valor ya está listo cuando el Fragment llega a escuchar
     val transaccionesFiltradas: StateFlow<List<TransaccionEntidad>> =
         combine(todasLasTransacciones, _filtroTipo, _textoBusqueda) { lista, tipo, texto ->
             lista
@@ -168,7 +163,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
                     texto.isBlank() || t.descripcion.contains(texto, ignoreCase = true)
                 }
         }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // ── Resumen del mes actual ────────────────────────────────────────────────
     data class ResumenUiState(
@@ -178,10 +173,11 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
         val etiquetaPeriodo: String = ""
     )
 
+    // Eagerly: el resumen siempre está calculado y listo
     val resumen: StateFlow<ResumenUiState> =
         transaccionesFiltradas
             .map { lista ->
-                val ahora    = Calendar.getInstance()
+                val ahora      = Calendar.getInstance()
                 val mesActual  = ahora.get(Calendar.MONTH)
                 val anioActual = ahora.get(Calendar.YEAR)
 
@@ -200,7 +196,7 @@ class HistorialViewModel(application: Application) : AndroidViewModel(applicatio
                 val etiqueta = "Total ${meses[mesActual].replaceFirstChar { it.uppercase() }} $anioActual"
                 ResumenUiState(ingresos, gastos, ingresos - gastos, etiqueta)
             }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ResumenUiState())
+            .stateIn(viewModelScope, SharingStarted.Eagerly, ResumenUiState())
 
     fun cambiarFiltroTipo(tipo: String) { _filtroTipo.value = tipo }
     fun cambiarBusqueda(texto: String)  { _textoBusqueda.value = texto }
