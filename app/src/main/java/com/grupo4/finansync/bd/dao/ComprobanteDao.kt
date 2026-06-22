@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.Flow
 interface ComprobanteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarComprobante(comprobante: ComprobanteEntidad)
+    suspend fun insertarComprobante(comprobante: ComprobanteEntidad): Long
 
     @Update
     suspend fun actualizarComprobante(comprobante: ComprobanteEntidad)
@@ -39,4 +39,11 @@ interface ComprobanteDao {
 
     @Query("SELECT * FROM comprobantes WHERE idTransaccion = :idTransaccion LIMIT 1")
     suspend fun obtenerComprobantePorTransaccion(idTransaccion: Int): ComprobanteEntidad?
+
+    // ── Sincronización offline ──────────────────────────────────────────────
+    @Query("SELECT * FROM comprobantes WHERE sincronizada = 0")
+    suspend fun obtenerNoSincronizados(): List<ComprobanteEntidad>
+
+    @Query("UPDATE comprobantes SET sincronizada = 1 WHERE idComprobante = :id")
+    suspend fun marcarComoSincronizado(id: Int)
 }

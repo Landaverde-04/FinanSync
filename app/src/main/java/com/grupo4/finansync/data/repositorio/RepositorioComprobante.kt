@@ -29,12 +29,32 @@ class RepositorioComprobante(private val comprobanteDao: ComprobanteDao) {
     // ── ESCRITURA ─────────────────────────────────────────────────────────────
 
     suspend fun insertarComprobante(comprobante: ComprobanteEntidad) {
-        comprobanteDao.insertarComprobante(comprobante)
+        val id = comprobanteDao.insertarComprobante(
+            comprobante.copy(sincronizada = false)
+        ).toInt()
         try {
-            SupabaseCliente.cliente.postgrest["comprobantes"].upsert(comprobante)
+            SupabaseCliente.cliente.postgrest["comprobantes"]
+                .upsert(comprobante.copy(idComprobante = id))
+            comprobanteDao.marcarComoSincronizado(id)
         } catch (e: Exception) {
-            Log.e("RepositorioComprobante", "Error al sincronizar inserción: ${e.message}")
+            Log.e("RepositorioComprobante", "Sin conexión, queda pendiente: ${e.message}")
         }
+    }
+
+    /** Sube los comprobantes guardados offline. Devuelve cuántos subió. */
+    suspend fun subirPendientes(): Int {
+        val pendientes = comprobanteDao.obtenerNoSincronizados()
+        var subidos = 0
+        for (c in pendientes) {
+            try {
+                SupabaseCliente.cliente.postgrest["comprobantes"].upsert(c)
+                comprobanteDao.marcarComoSincronizado(c.idComprobante)
+                subidos++
+            } catch (e: Exception) {
+                Log.e("RepositorioComprobante", "No se pudo subir ${c.idComprobante}: ${e.message}")
+            }
+        }
+        return subidos
     }
 
     suspend fun actualizarComprobante(comprobante: ComprobanteEntidad) {

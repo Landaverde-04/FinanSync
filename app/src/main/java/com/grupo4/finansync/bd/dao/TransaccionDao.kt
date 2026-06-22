@@ -50,6 +50,15 @@ interface TransaccionDao {
     @Query("SELECT COALESCE(SUM(monto), 0.0) FROM transacciones WHERE idUsuario = :idUsuario AND tipo = :tipo")
     suspend fun sumarMontoTransaccionesPorTipo(idUsuario: String, tipo: String): Double
 
+    // ── Sincronización offline ──────────────────────────────────────────────
+    // Transacciones guardadas sin conexión que aún no se subieron a la nube
+    @Query("SELECT * FROM transacciones WHERE idUsuario = :idUsuario AND sincronizada = 0")
+    suspend fun obtenerNoSincronizadas(idUsuario: String): List<TransaccionEntidad>
+
+    // Marca una transacción como ya subida a la nube
+    @Query("UPDATE transacciones SET sincronizada = 1 WHERE idTransaccion = :idTransaccion")
+    suspend fun marcarComoSincronizada(idTransaccion: Int)
+
     @Query("SELECT * FROM transacciones WHERE idUsuario = :idUsuario ORDER BY creadoEn DESC LIMIT 5")
     fun obtenerTransaccionesRecientes(idUsuario: String): Flow<List<TransaccionEntidad>>
 
