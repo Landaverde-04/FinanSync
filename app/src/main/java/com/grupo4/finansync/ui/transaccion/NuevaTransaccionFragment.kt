@@ -1,6 +1,7 @@
 package com.grupo4.finansync.ui.transaccion
 
 import android.Manifest
+import com.grupo4.finansync.ui.auth.SesionLocal
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.pm.PackageManager
@@ -46,8 +47,9 @@ class NuevaTransaccionFragment : Fragment() {
     private var _binding: FragmentNuevaTransaccionBinding? = null
     private val binding get() = _binding!!
 
-    private fun obtenerIdUsuarioActual(): String? =
-        SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+    private fun obtenerIdUsuarioActual(): String? {
+        return SesionLocal.obtenerIdUsuario(requireContext())
+    }
 
     private var tipoActual = "gasto"
     private var listaCategorias: List<CategoriaEntidad> = emptyList()

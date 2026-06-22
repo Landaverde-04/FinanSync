@@ -1,5 +1,8 @@
 package com.grupo4.finansync.ui.categoria
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,16 +17,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
-import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.data.repositorio.RepositorioCategoria
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentListaCategoriasBinding
 import com.grupo4.finansync.modelo.CategoriaEntidad
-import io.github.jan.supabase.gotrue.auth
+import com.grupo4.finansync.ui.auth.SesionLocal
 import kotlinx.coroutines.launch
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
 
 class ListaCategoriasFragment : Fragment() {
 
@@ -32,28 +31,62 @@ class ListaCategoriasFragment : Fragment() {
 
     private val vm: CategoriaViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext().applicationContext)
-        val repoCat = RepositorioCategoria(bd.categoriaDao(), requireContext().applicationContext)
-        val repoTrans = RepositorioTransaccion(bd.transaccionDao())
-        CategoriaViewModel.Factory(repoCat, repoTrans)
+
+        val repoCat = RepositorioCategoria(
+            bd.categoriaDao(),
+            requireContext().applicationContext
+        )
+
+        val repoTrans = RepositorioTransaccion(
+            bd.transaccionDao()
+        )
+
+        CategoriaViewModel.Factory(
+            repoCat,
+            repoTrans
+        )
     }
 
     private lateinit var adapterGastos: CategoriaAdapter
     private lateinit var adapterIngresos: CategoriaAdapter
     private lateinit var idUsuario: String
+
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentListaCategoriasBinding.inflate(inflater, container, false)
+        _binding = FragmentListaCategoriasBinding.inflate(
+            inflater,
+            container,
+            false
+        )
+
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
-        idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id ?: "usuario_prueba"
+        val id = SesionLocal.obtenerIdUsuario(requireContext())
+
+        if (id.isNullOrBlank()) {
+            Toast.makeText(
+                requireContext(),
+                "No se pudo obtener el usuario",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            parentFragmentManager.popBackStack()
+            return
+        }
+
+        idUsuario = id
 
         configurarRecyclerView()
         configurarNavegacion()
@@ -67,6 +100,7 @@ class ListaCategoriasFragment : Fragment() {
         adapterGastos = CategoriaAdapter { categoria ->
             confirmarEliminacion(categoria)
         }
+
         binding.rvCategoriasGastos.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@ListaCategoriasFragment.adapterGastos
@@ -75,6 +109,7 @@ class ListaCategoriasFragment : Fragment() {
         adapterIngresos = CategoriaAdapter { categoria ->
             confirmarEliminacion(categoria)
         }
+
         binding.rvCategoriasIngresos.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@ListaCategoriasFragment.adapterIngresos
@@ -88,7 +123,10 @@ class ListaCategoriasFragment : Fragment() {
 
         binding.btnAgregarCategoria.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.contenedorFragment, FormularioCategoriaFragment())
+                .replace(
+                    R.id.contenedorFragment,
+                    FormularioCategoriaFragment()
+                )
                 .addToBackStack(null)
                 .commit()
         }
@@ -98,8 +136,14 @@ class ListaCategoriasFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.categorias.collect { lista ->
-                    val gastos = lista.filter { it.tipo == "gasto" }
-                    val ingresos = lista.filter { it.tipo == "ingreso" }
+                    val gastos = lista.filter {
+                        it.tipo == "gasto"
+                    }
+
+                    val ingresos = lista.filter {
+                        it.tipo == "ingreso"
+                    }
+
                     adapterGastos.actualizarLista(gastos)
                     adapterIngresos.actualizarLista(ingresos)
                 }
@@ -107,15 +151,23 @@ class ListaCategoriasFragment : Fragment() {
         }
     }
 
-    private fun confirmarEliminacion(categoria: CategoriaEntidad) {
+    private fun confirmarEliminacion(
+        categoria: CategoriaEntidad
+    ) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Eliminar categoría")
-            .setMessage("¿Estás seguro de que deseas eliminar la categoría \"${categoria.nombreCategoria}\"?")
+            .setMessage(
+                "¿Estás seguro de que deseas eliminar la categoría \"${categoria.nombreCategoria}\"?"
+            )
             .setNegativeButton("Cancelar", null)
             .setPositiveButton("Eliminar") { _, _ ->
                 vm.eliminarCategoria(categoria) { exito, mensaje ->
                     if (exito) {
-                        Toast.makeText(requireContext(), mensaje, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            requireContext(),
+                            mensaje,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle("No se puede eliminar")
@@ -129,30 +181,51 @@ class ListaCategoriasFragment : Fragment() {
     }
 
     private fun observarConectividad() {
-        val connectivityManager = requireContext()
-            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
- 
+        val appContext = requireContext().applicationContext
+
+        val connectivityManager =
+            appContext.getSystemService(Context.CONNECTIVITY_SERVICE)
+                    as ConnectivityManager
+
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 activity?.runOnUiThread {
-                    vm.sincronizarPendientes(idUsuario, requireContext().applicationContext)
+                    vm.sincronizarPendientes(
+                        idUsuario,
+                        appContext
+                    )
                 }
             }
         }
-        connectivityManager.registerDefaultNetworkCallback(networkCallback!!)
+
+        try {
+            connectivityManager.registerDefaultNetworkCallback(
+                networkCallback!!
+            )
+        } catch (e: Exception) {
+            // No detener la pantalla si no se puede registrar el callback.
+        }
     }
- 
+
     override fun onDestroyView() {
-        super.onDestroyView()
         networkCallback?.let { callback ->
             try {
-                val connectivityManager = requireContext()
-                    .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val appContext = requireContext().applicationContext
+
+                val connectivityManager =
+                    appContext.getSystemService(Context.CONNECTIVITY_SERVICE)
+                            as ConnectivityManager
+
                 connectivityManager.unregisterNetworkCallback(callback)
+
             } catch (e: Exception) {
-                // Falla silenciosa si se pierde el contexto
+                // Falla silenciosa si se pierde el contexto.
             }
         }
+
+        networkCallback = null
         _binding = null
+
+        super.onDestroyView()
     }
 }
