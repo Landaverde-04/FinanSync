@@ -34,8 +34,9 @@ class AuthViewModelFactory(
             )
 
             return AuthViewModel(
-                repositorioUsuario,
-                prefs
+                repositorioUsuario = repositorioUsuario,
+                prefs = prefs,
+                appContext = appContext
             ) as T
         }
 

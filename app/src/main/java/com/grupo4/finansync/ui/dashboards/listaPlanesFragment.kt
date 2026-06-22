@@ -29,7 +29,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Locale
-
+import com.grupo4.finansync.ui.auth.SesionLocal
 class listaPlanesFragment : Fragment() {
 
     private var _binding: FragmentListaPlanesBinding? = null
@@ -43,7 +43,10 @@ class listaPlanesFragment : Fragment() {
     private val viewModel: PlanesViewModel by viewModels {
         val database = BaseDatos.obtenerInstancia(requireContext())
         val repo = RepositorioPlanAhorro(database.planAhorroDao())
-        val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id ?: "usuario-prueba-001"
+
+        val idUsuario = SesionLocal.obtenerIdUsuario(requireContext())
+            ?: ""
+
         PlanesViewModel.Factory(repo, idUsuario)
     }
 

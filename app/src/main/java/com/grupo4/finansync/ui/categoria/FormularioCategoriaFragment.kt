@@ -2,6 +2,7 @@ package com.grupo4.finansync.ui.categoria
 
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,14 +17,11 @@ import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.grupo4.finansync.R
 import com.grupo4.finansync.bd.BaseDatos
-import com.grupo4.finansync.data.remote.SupabaseCliente
 import com.grupo4.finansync.data.repositorio.RepositorioCategoria
 import com.grupo4.finansync.data.repositorio.RepositorioTransaccion
 import com.grupo4.finansync.databinding.FragmentFormularioCategoriaBinding
 import com.grupo4.finansync.modelo.CategoriaEntidad
-import io.github.jan.supabase.gotrue.auth
-
-import android.util.TypedValue
+import com.grupo4.finansync.ui.auth.SesionLocal
 
 class FormularioCategoriaFragment : Fragment() {
 
@@ -32,25 +30,53 @@ class FormularioCategoriaFragment : Fragment() {
 
     private val vm: CategoriaViewModel by viewModels {
         val bd = BaseDatos.obtenerInstancia(requireContext().applicationContext)
-        val repoCat = RepositorioCategoria(bd.categoriaDao(), requireContext().applicationContext)
-        val repoTrans = RepositorioTransaccion(bd.transaccionDao())
-        CategoriaViewModel.Factory(repoCat, repoTrans)
+
+        val repoCat = RepositorioCategoria(
+            bd.categoriaDao(),
+            requireContext().applicationContext
+        )
+
+        val repoTrans = RepositorioTransaccion(
+            bd.transaccionDao()
+        )
+
+        CategoriaViewModel.Factory(
+            repoCat,
+            repoTrans
+        )
     }
 
     private var emojiSeleccionado: String = "🍔"
     private var emojiPersonalizado: String? = null
+
     private lateinit var listaCards: List<MaterialCardView>
-    private val defaultEmojis = listOf("🍔", "🚌", "🎬", "💰", "🏥")
+
+    private val defaultEmojis = listOf(
+        "🍔",
+        "🚌",
+        "🎬",
+        "💰",
+        "🏥"
+    )
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentFormularioCategoriaBinding.inflate(inflater, container, false)
+        _binding = FragmentFormularioCategoriaBinding.inflate(
+            inflater,
+            container,
+            false
+        )
+
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         listaCards = listOf(
@@ -80,39 +106,68 @@ class FormularioCategoriaFragment : Fragment() {
         }
     }
 
-    private fun seleccionarCard(indice: Int) {
+    private fun seleccionarCard(
+        indice: Int
+    ) {
         if (indice < 5) {
             emojiSeleccionado = defaultEmojis[indice]
         } else {
             emojiSeleccionado = emojiPersonalizado ?: "🍔"
         }
 
-        val colorPrimario = obtenerColorDeTema(com.google.android.material.R.attr.colorPrimary)
-        val colorNormal = obtenerColorDeTema(com.google.android.material.R.attr.colorOutline)
-        val colorFondoSeleccionado = obtenerColorDeTema(com.google.android.material.R.attr.colorPrimaryContainer)
+        val colorPrimario =
+            obtenerColorDeTema(com.google.android.material.R.attr.colorPrimary)
+
+        val colorNormal =
+            obtenerColorDeTema(com.google.android.material.R.attr.colorOutline)
+
+        val colorFondoSeleccionado =
+            obtenerColorDeTema(com.google.android.material.R.attr.colorPrimaryContainer)
 
         for (i in listaCards.indices) {
             if (i == indice) {
                 listaCards[i].strokeColor = colorPrimario
                 listaCards[i].strokeWidth = dpToPx(3)
-                listaCards[i].setCardBackgroundColor(ColorStateList.valueOf(colorFondoSeleccionado))
+                listaCards[i].setCardBackgroundColor(
+                    ColorStateList.valueOf(colorFondoSeleccionado)
+                )
             } else {
                 listaCards[i].strokeColor = colorNormal
                 listaCards[i].strokeWidth = dpToPx(1)
-                listaCards[i].setCardBackgroundColor(ColorStateList.valueOf(ContextCompat.getColor(requireContext(), android.R.color.transparent)))
+                listaCards[i].setCardBackgroundColor(
+                    ColorStateList.valueOf(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            android.R.color.transparent
+                        )
+                    )
+                )
             }
         }
     }
 
-    private fun obtenerColorDeTema(attr: Int): Int {
+    private fun obtenerColorDeTema(
+        attr: Int
+    ): Int {
         val typedValue = TypedValue()
-        requireContext().theme.resolveAttribute(attr, typedValue, true)
+
+        requireContext().theme.resolveAttribute(
+            attr,
+            typedValue,
+            true
+        )
+
         return typedValue.data
     }
 
     private fun mostrarDialogoEmojis() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_selector_emojis, null)
-        val gridView = dialogView.findViewById<GridView>(R.id.gridViewEmojis)
+        val dialogView = layoutInflater.inflate(
+            R.layout.dialog_selector_emojis,
+            null
+        )
+
+        val gridView =
+            dialogView.findViewById<GridView>(R.id.gridViewEmojis)
 
         val emojis = listOf(
             "🍔", "🍕", "🌮", "☕", "🍺", "🍎",
@@ -123,13 +178,28 @@ class FormularioCategoriaFragment : Fragment() {
             "💼", "📱", "🔧", "🎁", "🎓", "🐾"
         )
 
-        val adapter = object : ArrayAdapter<String>(requireContext(), R.layout.item_emoji_grid, emojis) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val tv = super.getView(position, convertView, parent) as TextView
+        val adapter = object : ArrayAdapter<String>(
+            requireContext(),
+            R.layout.item_emoji_grid,
+            emojis
+        ) {
+            override fun getView(
+                position: Int,
+                convertView: View?,
+                parent: ViewGroup
+            ): View {
+                val tv = super.getView(
+                    position,
+                    convertView,
+                    parent
+                ) as TextView
+
                 tv.text = getItem(position)
+
                 return tv
             }
         }
+
         gridView.adapter = adapter
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
@@ -139,9 +209,12 @@ class FormularioCategoriaFragment : Fragment() {
 
         gridView.setOnItemClickListener { _, _, position, _ ->
             val emojiElegido = emojis[position]
+
             emojiPersonalizado = emojiElegido
             binding.txtEmojiMas.text = emojiElegido
+
             seleccionarCard(5)
+
             dialog.dismiss()
         }
 
@@ -163,18 +236,38 @@ class FormularioCategoriaFragment : Fragment() {
     }
 
     private fun guardarCategoria() {
-        val nombre = binding.etNombreCategoria.text.toString().trim()
+        val nombre = binding.etNombreCategoria.text
+            .toString()
+            .trim()
 
         if (nombre.isEmpty()) {
-            binding.tilNombreCategoria.error = "Ingresa el nombre de la categoría"
+            binding.tilNombreCategoria.error =
+                "Ingresa el nombre de la categoría"
             return
         } else {
             binding.tilNombreCategoria.error = null
         }
 
-        val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id ?: "usuario_prueba"
-        val tipo = if (binding.chipGasto.isChecked) "gasto" else "ingreso"
-        val nombreConEmoji = "$emojiSeleccionado $nombre"
+        val idUsuario =
+            SesionLocal.obtenerIdUsuario(requireContext())
+
+        if (idUsuario.isNullOrBlank()) {
+            Toast.makeText(
+                requireContext(),
+                "No se pudo obtener el usuario",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        val tipo = if (binding.chipGasto.isChecked) {
+            "gasto"
+        } else {
+            "ingreso"
+        }
+
+        val nombreConEmoji =
+            "$emojiSeleccionado $nombre"
 
         val nuevaCategoria = CategoriaEntidad(
             idCategoria = 0,
@@ -184,17 +277,25 @@ class FormularioCategoriaFragment : Fragment() {
         )
 
         vm.insertarCategoria(nuevaCategoria)
-        Toast.makeText(requireContext(), "Categoría guardada con éxito", Toast.LENGTH_SHORT).show()
+
+        Toast.makeText(
+            requireContext(),
+            "Categoría guardada con éxito",
+            Toast.LENGTH_SHORT
+        ).show()
+
         parentFragmentManager.popBackStack()
     }
 
-    private fun dpToPx(dp: Int): Int {
+    private fun dpToPx(
+        dp: Int
+    ): Int {
         val density = resources.displayMetrics.density
         return (dp * density).toInt()
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 }

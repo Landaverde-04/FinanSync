@@ -1,6 +1,9 @@
 package com.grupo4.finansync.ui.auth
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,19 +16,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class AuthViewModel(
     private val repositorioUsuario: RepositorioUsuario,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val appContext: Context
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Inactivo)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     // ── LOGIN con correo + contraseña ─────────────────────────────────────
-    fun login(correo: String, password: String) {
+    fun login(
+        correo: String,
+        password: String
+    ) {
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
+
+            if (!hayConexionInternet()) {
+                intentarLoginOffline(
+                    correo = correo,
+                    password = password
+                )
+                return@launch
+            }
 
             try {
                 SupabaseCliente.cliente.auth.signInWith(Email) {
@@ -33,22 +49,37 @@ class AuthViewModel(
                     this.password = password
                 }
 
-                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-                    ?: throw Exception("No se pudo obtener el usuario")
+                val idUsuario =
+                    SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+                        ?: throw Exception("No se pudo obtener el usuario")
 
-                guardarCredencialesParaBiometria(
+                guardarCredencialesParaAccesoLocal(
+                    idUsuario = idUsuario,
                     correo = correo,
                     password = password
                 )
 
                 limpiarModoRecuperacionPassword()
 
+                prefs.edit()
+                    .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
+                    .apply()
+
                 _authState.value = AuthState.Exito(idUsuario)
 
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(
-                    interpretarError(e.message ?: "")
-                )
+                val mensaje = e.message ?: ""
+
+                if (esErrorConexion(mensaje)) {
+                    intentarLoginOffline(
+                        correo = correo,
+                        password = password
+                    )
+                } else {
+                    _authState.value = AuthState.Error(
+                        interpretarError(mensaje)
+                    )
+                }
             }
         }
     }
@@ -57,6 +88,11 @@ class AuthViewModel(
     fun loginConBiometrico() {
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
+
+            if (!hayConexionInternet()) {
+                intentarLoginBiometricoOffline()
+                return@launch
+            }
 
             try {
                 val correo = prefs.getString(
@@ -77,27 +113,53 @@ class AuthViewModel(
                     this.password = password
                 }
 
-                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-                    ?: throw Exception("No se pudo obtener el usuario")
+                val idUsuario =
+                    SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+                        ?: throw Exception("No se pudo obtener el usuario")
+
+                guardarCredencialesParaAccesoLocal(
+                    idUsuario = idUsuario,
+                    correo = correo,
+                    password = password
+                )
 
                 limpiarModoRecuperacionPassword()
+
+                prefs.edit()
+                    .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
+                    .apply()
 
                 _authState.value = AuthState.Exito(idUsuario)
 
             } catch (e: Exception) {
-                limpiarCredencialesBiometricas()
+                val mensaje = e.message ?: ""
 
-                _authState.value = AuthState.Error(
-                    "No se pudo iniciar sesión con huella. Ingresa tu contraseña."
-                )
+                if (esErrorConexion(mensaje)) {
+                    intentarLoginBiometricoOffline()
+                } else {
+                    _authState.value = AuthState.Error(
+                        "No se pudo iniciar sesión con huella. Ingresa tu contraseña."
+                    )
+                }
             }
         }
     }
 
     // ── REGISTRO ──────────────────────────────────────────────────────────
-    fun registrar(nombre: String, correo: String, password: String) {
+    fun registrar(
+        nombre: String,
+        correo: String,
+        password: String
+    ) {
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
+
+            if (!hayConexionInternet()) {
+                _authState.value = AuthState.Error(
+                    "Necesitas conexión a internet para registrarte."
+                )
+                return@launch
+            }
 
             try {
                 SupabaseCliente.cliente.auth.signUpWith(Email) {
@@ -105,8 +167,9 @@ class AuthViewModel(
                     this.password = password
                 }
 
-                val idUsuario = SupabaseCliente.cliente.auth.currentUserOrNull()?.id
-                    ?: throw Exception("No se pudo crear la cuenta")
+                val idUsuario =
+                    SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+                        ?: throw Exception("No se pudo crear la cuenta")
 
                 val usuario = UsuarioEntidad(
                     idUsuario = idUsuario,
@@ -117,12 +180,17 @@ class AuthViewModel(
 
                 repositorioUsuario.insertarUsuario(usuario)
 
-                guardarCredencialesParaBiometria(
+                guardarCredencialesParaAccesoLocal(
+                    idUsuario = idUsuario,
                     correo = correo,
                     password = password
                 )
 
                 limpiarModoRecuperacionPassword()
+
+                prefs.edit()
+                    .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
+                    .apply()
 
                 _authState.value = AuthState.Exito(idUsuario)
 
@@ -145,6 +213,13 @@ class AuthViewModel(
 
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
+
+            if (!hayConexionInternet()) {
+                _authState.value = AuthState.Error(
+                    "Necesitas conexión a internet para recuperar tu contraseña."
+                )
+                return@launch
+            }
 
             try {
                 SupabaseCliente.cliente.auth.resetPasswordForEmail(
@@ -179,6 +254,13 @@ class AuthViewModel(
         viewModelScope.launch {
             _authState.value = AuthState.Cargando
 
+            if (!hayConexionInternet()) {
+                _authState.value = AuthState.Error(
+                    "Necesitas conexión a internet para actualizar tu contraseña."
+                )
+                return@launch
+            }
+
             try {
                 /*
                  * No validamos con currentUserOrNull().
@@ -194,7 +276,7 @@ class AuthViewModel(
                     password = nuevaPassword
                 }
 
-                limpiarCredencialesBiometricas()
+                limpiarCredencialesLocales()
                 limpiarModoRecuperacionPassword()
 
                 /*
@@ -217,7 +299,9 @@ class AuthViewModel(
     }
 
     // ── LOGOUT ────────────────────────────────────────────────────────────
-    fun cerrarSesion(mantenerHuella: Boolean = true) {
+    fun cerrarSesion(
+        mantenerHuella: Boolean = true
+    ) {
         viewModelScope.launch {
             try {
                 SupabaseCliente.cliente.auth.signOut()
@@ -225,14 +309,14 @@ class AuthViewModel(
                 // No bloquear salida si falla Supabase
             }
 
-            val huellaActiva = prefs.getBoolean(
-                AuthPrefs.PREF_HUELLA_ACTIVA,
-                false
-            )
-
-            if (!mantenerHuella || !huellaActiva) {
-                limpiarCredencialesBiometricas()
+            if (!mantenerHuella) {
+                desactivarHuellaLocal()
             }
+
+            prefs.edit()
+                .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
+                .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
+                .apply()
 
             limpiarModoRecuperacionPassword()
 
@@ -242,40 +326,82 @@ class AuthViewModel(
 
     // ── HELPERS PÚBLICOS ──────────────────────────────────────────────────
     fun haySesionActiva(): Boolean {
-        return SupabaseCliente.cliente.auth.currentUserOrNull() != null
+        val sesionLocalActiva = prefs.getBoolean(
+            AuthPrefs.PREF_SESION_PREVIA,
+            false
+        )
+
+        val ultimoUsuario = prefs.getString(
+            AuthPrefs.PREF_ULTIMO_USUARIO_ID,
+            null
+        )
+
+        return sesionLocalActiva && !ultimoUsuario.isNullOrBlank()
     }
 
     fun hayCredencialesBiometricas(): Boolean {
+        val ultimoIdUsuario = prefs.getString(
+            AuthPrefs.PREF_ULTIMO_USUARIO_ID,
+            null
+        )
+
+        val idHuella = prefs.getString(
+            AuthPrefs.PREF_HUELLA_USUARIO_ID,
+            null
+        )
+
         return prefs.getBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false) &&
+                !ultimoIdUsuario.isNullOrBlank() &&
+                idHuella == ultimoIdUsuario &&
                 prefs.getString(AuthPrefs.PREF_CORREO_GUARDADO, null) != null &&
                 prefs.getString(AuthPrefs.PREF_PASSWORD_CIFRADA, null) != null
     }
 
     fun hayCredencialesGuardadas(): Boolean {
         return prefs.getString(AuthPrefs.PREF_CORREO_GUARDADO, null) != null &&
-                prefs.getString(AuthPrefs.PREF_PASSWORD_CIFRADA, null) != null
+                prefs.getString(AuthPrefs.PREF_PASSWORD_CIFRADA, null) != null &&
+                prefs.getString(AuthPrefs.PREF_ULTIMO_USUARIO_ID, null) != null
     }
 
     fun obtenerCorreoGuardado(): String {
-        return prefs.getString(AuthPrefs.PREF_CORREO_GUARDADO, "") ?: ""
+        return prefs.getString(
+            AuthPrefs.PREF_CORREO_GUARDADO,
+            ""
+        ) ?: ""
     }
 
     fun obtenerIdUsuario(): String? {
         return SupabaseCliente.cliente.auth.currentUserOrNull()?.id
+            ?: prefs.getString(
+                AuthPrefs.PREF_ULTIMO_USUARIO_ID,
+                null
+            )
     }
 
     fun activarHuellaLocal(): Boolean {
-        if (!hayCredencialesGuardadas()) return false
+        if (!hayCredencialesGuardadas()) {
+            return false
+        }
+
+        val idUsuario = obtenerIdUsuario()
+            ?: return false
 
         prefs.edit()
             .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, true)
+            .putString(
+                AuthPrefs.PREF_HUELLA_USUARIO_ID,
+                idUsuario
+            )
             .apply()
 
         return true
     }
 
     fun desactivarHuellaLocal() {
-        limpiarCredencialesBiometricas()
+        prefs.edit()
+            .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
+            .remove(AuthPrefs.PREF_HUELLA_USUARIO_ID)
+            .apply()
     }
 
     fun resetearEstado() {
@@ -283,7 +409,8 @@ class AuthViewModel(
     }
 
     // ── HELPERS PRIVADOS ──────────────────────────────────────────────────
-    private fun guardarCredencialesParaBiometria(
+    private fun guardarCredencialesParaAccesoLocal(
+        idUsuario: String,
         correo: String,
         password: String
     ) {
@@ -291,18 +418,130 @@ class AuthViewModel(
 
         prefs.edit()
             .putBoolean(AuthPrefs.PREF_SESION_PREVIA, true)
-            .putString(AuthPrefs.PREF_CORREO_GUARDADO, correo)
-            .putString(AuthPrefs.PREF_PASSWORD_CIFRADA, passwordCifrada)
+            .putBoolean(AuthPrefs.PREF_ACCESO_OFFLINE_ACTIVO, true)
+            .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
+            .putString(
+                AuthPrefs.PREF_ULTIMO_USUARIO_ID,
+                idUsuario
+            )
+            .putString(
+                AuthPrefs.PREF_ULTIMO_CORREO,
+                normalizarCorreo(correo)
+            )
+            .putString(
+                AuthPrefs.PREF_CORREO_GUARDADO,
+                correo
+            )
+            .putString(
+                AuthPrefs.PREF_PASSWORD_CIFRADA,
+                passwordCifrada
+            )
             .apply()
     }
 
-    private fun limpiarCredencialesBiometricas() {
+    private fun intentarLoginOffline(
+        correo: String,
+        password: String
+    ) {
+        val accesoOfflineActivo = prefs.getBoolean(
+            AuthPrefs.PREF_ACCESO_OFFLINE_ACTIVO,
+            false
+        )
+
+        val ultimoIdUsuario = prefs.getString(
+            AuthPrefs.PREF_ULTIMO_USUARIO_ID,
+            null
+        )
+
+        val ultimoCorreo = prefs.getString(
+            AuthPrefs.PREF_ULTIMO_CORREO,
+            null
+        )
+
+        val passwordCifrada = prefs.getString(
+            AuthPrefs.PREF_PASSWORD_CIFRADA,
+            null
+        )
+
+        if (
+            !accesoOfflineActivo ||
+            ultimoIdUsuario.isNullOrBlank() ||
+            ultimoCorreo.isNullOrBlank() ||
+            passwordCifrada.isNullOrBlank()
+        ) {
+            _authState.value = AuthState.Error(
+                "Sin conexión. Debes iniciar sesión con internet al menos una vez."
+            )
+            return
+        }
+
+        if (normalizarCorreo(correo) != ultimoCorreo) {
+            _authState.value = AuthState.Error(
+                "Sin conexión. Solo puede entrar el último usuario usado en este dispositivo."
+            )
+            return
+        }
+
+        val passwordGuardada =
+            BiometricKeyManager.descifrar(passwordCifrada)
+
+        if (passwordGuardada == null || passwordGuardada != password) {
+            _authState.value = AuthState.Error(
+                "Contraseña incorrecta para el acceso offline."
+            )
+            return
+        }
+
+        prefs.edit()
+            .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, true)
+            .putBoolean(AuthPrefs.PREF_SESION_PREVIA, true)
+            .apply()
+
+        _authState.value = AuthState.Exito(ultimoIdUsuario)
+    }
+
+    private fun intentarLoginBiometricoOffline() {
+        val accesoOfflineActivo = prefs.getBoolean(
+            AuthPrefs.PREF_ACCESO_OFFLINE_ACTIVO,
+            false
+        )
+
+        val ultimoIdUsuario = prefs.getString(
+            AuthPrefs.PREF_ULTIMO_USUARIO_ID,
+            null
+        )
+
+        if (
+            !accesoOfflineActivo ||
+            ultimoIdUsuario.isNullOrBlank() ||
+            !hayCredencialesBiometricas()
+        ) {
+            _authState.value = AuthState.Error(
+                "Sin conexión. No hay un acceso offline válido para este usuario."
+            )
+            return
+        }
+
+        prefs.edit()
+            .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, true)
+            .putBoolean(AuthPrefs.PREF_SESION_PREVIA, true)
+            .apply()
+
+        _authState.value = AuthState.Exito(ultimoIdUsuario)
+    }
+
+    private fun limpiarCredencialesLocales() {
         BiometricKeyManager.eliminarClave()
 
         prefs.edit()
             .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
             .putBoolean(AuthPrefs.PREF_HUELLA_ACTIVA, false)
+            .putBoolean(AuthPrefs.PREF_ACCESO_OFFLINE_ACTIVO, false)
+            .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
+            .remove(AuthPrefs.PREF_HUELLA_USUARIO_ID)
             .remove(AuthPrefs.PREF_PASSWORD_CIFRADA)
+            .remove(AuthPrefs.PREF_ULTIMO_USUARIO_ID)
+            .remove(AuthPrefs.PREF_ULTIMO_CORREO)
             .apply()
 
         // El correo se conserva para prellenar el campo del login.
@@ -317,6 +556,44 @@ class AuthViewModel(
             .apply()
     }
 
+    private fun normalizarCorreo(correo: String): String {
+        return correo.trim().lowercase(Locale.ROOT)
+    }
+
+    private fun hayConexionInternet(): Boolean {
+        return try {
+            val connectivityManager =
+                appContext.getSystemService(Context.CONNECTIVITY_SERVICE)
+                        as ConnectivityManager
+
+            val network =
+                connectivityManager.activeNetwork ?: return false
+
+            val capabilities =
+                connectivityManager.getNetworkCapabilities(network)
+                    ?: return false
+
+            capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+            )
+
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun esErrorConexion(error: String): Boolean {
+        return error.contains("Unable to resolve host", ignoreCase = true) ||
+                error.contains("network", ignoreCase = true) ||
+                error.contains("SocketException", ignoreCase = true) ||
+                error.contains("timeout", ignoreCase = true) ||
+                error.contains("Failed to connect", ignoreCase = true) ||
+                error.contains(
+                    "No address associated with hostname",
+                    ignoreCase = true
+                )
+    }
+
     // ── TRADUCCIÓN DE ERRORES ─────────────────────────────────────────────
     private fun interpretarError(error: String): String = when {
         error.contains("Invalid login credentials", ignoreCase = true) ->
@@ -327,7 +604,13 @@ class AuthViewModel(
 
         error.contains("Unable to resolve host", ignoreCase = true) ||
                 error.contains("network", ignoreCase = true) ||
-                error.contains("SocketException", ignoreCase = true) ->
+                error.contains("SocketException", ignoreCase = true) ||
+                error.contains("timeout", ignoreCase = true) ||
+                error.contains("Failed to connect", ignoreCase = true) ||
+                error.contains(
+                    "No address associated with hostname",
+                    ignoreCase = true
+                ) ->
             "Sin conexión a internet. Verifica tu red."
 
         error.contains("Email not confirmed", ignoreCase = true) ->

@@ -28,6 +28,8 @@ import com.grupo4.finansync.ui.transaccion.NuevaTransaccionFragment
 import io.github.jan.supabase.gotrue.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import android.content.Intent
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Pantalla principal.
@@ -264,38 +266,55 @@ class MainActivity : AppCompatActivity() {
                         Context.MODE_PRIVATE
                     )
 
-                    try {
-                        SupabaseCliente.cliente.auth.signOut()
-                    } catch (e: Exception) {
-                        Log.e(
-                            "MainActivity",
-                            "Error al cerrar sesión: ${e.message}"
-                        )
-                    }
-
                     /*
-                     * No se elimina la huella aquí.
+                     * Primero cerramos la sesión local.
                      *
-                     * Si el usuario A activó huella, al cerrar sesión
-                     * debe poder volver a entrar con ella.
-                     *
-                     * La validación de si la huella pertenece al usuario
-                     * actual se hace en AjustesFragment mediante
-                     * PREF_HUELLA_USUARIO_ID.
+                     * Esto es lo más importante para que AuthActivity
+                     * no vuelva a mandar al Dashboard cuando estás offline.
                      */
                     prefs.edit()
                         .putBoolean(AuthPrefs.PREF_SESION_PREVIA, false)
+                        .putBoolean(AuthPrefs.PREF_MODO_OFFLINE, false)
                         .putBoolean(
                             AuthPrefs.PREF_RECUPERACION_PASSWORD_ACTIVA,
                             false
                         )
                         .apply()
 
-                    AuthActivity.iniciar(this@MainActivity)
-                    finish()
+                    /*
+                     * Luego intentamos cerrar Supabase.
+                     *
+                     * Si no hay internet, no dejamos que esto bloquee
+                     * la salida al login.
+                     */
+                    withTimeoutOrNull(1200L) {
+                        try {
+                            SupabaseCliente.cliente.auth.signOut()
+                        } catch (e: Exception) {
+                            Log.e(
+                                "MainActivity",
+                                "Error al cerrar sesión en Supabase: ${e.message}"
+                            )
+                        }
+                    }
+
+                    irAlLogin()
                 }
             }
             .show()
+    }
+
+    private fun irAlLogin() {
+        val intent = Intent(
+            this,
+            AuthActivity::class.java
+        ).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
+        startActivity(intent)
+        finish()
     }
 
     private fun sincronizarDesdeLaNube() {
